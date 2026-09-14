@@ -84,4 +84,5 @@ Linux is not currently a primary target. X11 and Wayland differ substantially in
 - Dropped images open under their original name, start clean, and save edits back to the source.
 - Saved tabs rename their source file inline with Windows/Linux `F2`, macOS `Return`, or a double-click; existing files are not overwritten and the extension is preserved.
 - Pasted images and pasted file-manager images create new timestamp-named tabs.
+- Pixel measurement shows live horizontal and vertical deltas while dragging, remains based on source-image pixels at every zoom level, and does not modify exported images.
 - Minimize/hide, tray double-click, and tray Exit work.

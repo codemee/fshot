@@ -37,9 +37,23 @@ class ImageCanvas(QWidget):
     def can_undo(self) -> bool:
         return bool(self._undo)
 
+    @property
+    def measurement(self) -> tuple[int, int] | None:
+        if self.tool is not Tool.MEASURE or self._start is None or self._preview is None:
+            return None
+        return (
+            abs(self._preview.x() - self._start.x()),
+            abs(self._preview.y() - self._start.y()),
+        )
+
     def set_tool(self, tool: Tool) -> None:
+        if self.tool is Tool.MEASURE and tool is not Tool.MEASURE:
+            self._start = None
+            self._last = None
+            self._preview = None
         self.tool = tool
         self._update_cursor()
+        self.update()
 
     def set_zoom(self, zoom: float) -> None:
         self.zoom = max(0.1, min(8.0, zoom))
@@ -75,11 +89,17 @@ class ImageCanvas(QWidget):
         )
         painter.drawImage(target, self.image)
         self._draw_crop_handles(painter)
-        if self._start and self._preview and self.tool in {Tool.LINE, Tool.RECTANGLE, Tool.MOSAIC}:
+        if (
+            self._start is not None
+            and self._preview is not None
+            and self.tool in {Tool.LINE, Tool.RECTANGLE, Tool.MEASURE, Tool.MOSAIC}
+        ):
             painter.setBrush(Qt.BrushStyle.NoBrush)
             rect = QRect(self._to_widget(self._start), self._to_widget(self._preview)).normalized()
             if self.tool == Tool.MOSAIC:
                 self._draw_selection_rect(painter, rect)
+            elif self.tool == Tool.MEASURE:
+                self._draw_measurement(painter, rect, self._to_widget(self._preview))
             elif self.tool == Tool.LINE:
                 pen = QPen(self.settings.color, max(1, int(self.settings.line_width * self.zoom)))
                 pen.setCapStyle(Qt.PenCapStyle.RoundCap)
@@ -112,7 +132,8 @@ class ImageCanvas(QWidget):
         if self.tool == Tool.TEXT:
             self._place_text(point)
             return
-        self._push_undo()
+        if self.tool is not Tool.MEASURE:
+            self._push_undo()
         self._start = point
         self._last = point
         self._preview = point
@@ -167,6 +188,11 @@ class ImageCanvas(QWidget):
         elif self.tool == Tool.MOSAIC:
             self._apply_mosaic(QRect(self._start, end).normalized())
             self.changed.emit()
+        elif self.tool == Tool.MEASURE:
+            self._preview = end
+            self._last = None
+            self.update()
+            return
         self._start = None
         self._last = None
         self._preview = None
@@ -254,6 +280,36 @@ class ImageCanvas(QWidget):
         pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
         painter.setPen(pen)
         painter.drawRect(rect)
+
+    def _draw_measurement(self, painter: QPainter, rect: QRect, end: QPoint) -> None:
+        measurement = self.measurement
+        if measurement is None:
+            return
+        horizontal, vertical = measurement
+        painter.save()
+        outline = QPen(QColor("#1971c2"), 1.5, Qt.PenStyle.DashLine)
+        outline.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
+        painter.setPen(outline)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRect(rect)
+
+        text = f"↔ {horizontal} px   ↕ {vertical} px"
+        label = painter.fontMetrics().boundingRect(text).adjusted(-6, -4, 6, 4)
+        label.moveTopLeft(end + QPoint(12, 12))
+        bounds = self.rect().adjusted(2, 2, -2, -2)
+        if label.right() > bounds.right():
+            label.moveRight(end.x() - 12)
+        if label.bottom() > bounds.bottom():
+            label.moveBottom(end.y() - 12)
+        if label.left() < bounds.left():
+            label.moveLeft(bounds.left())
+        if label.top() < bounds.top():
+            label.moveTop(bounds.top())
+        painter.setPen(QPen(QColor("#ffffff"), 1))
+        painter.setBrush(QColor(33, 37, 41, 225))
+        painter.drawRoundedRect(label, 4, 4)
+        painter.drawText(label, Qt.AlignmentFlag.AlignCenter, text)
+        painter.restore()
 
     def _draw_crop_handles(self, painter: QPainter) -> None:
         rect = self._crop_widget_rect()
@@ -360,7 +416,7 @@ class ImageCanvas(QWidget):
         )
 
     def _update_cursor(self) -> None:
-        if self.tool in {Tool.RECTANGLE, Tool.MOSAIC}:
+        if self.tool in {Tool.RECTANGLE, Tool.MEASURE, Tool.MOSAIC}:
             self.setCursor(Qt.CursorShape.CrossCursor)
         elif self.tool == Tool.TEXT:
             self.setCursor(Qt.CursorShape.IBeamCursor)

@@ -79,10 +79,12 @@ macOS uses the same `Ctrl+Shift` letter combinations. Grant the packaged `FShot.
 Editor shortcuts:
 
 The line tool also creates arrows and endpoint markers. Use the dropdown beside the line button to set the start and end independently to none, an arrow, or a solid circle.
+The pixel measurement tool uses the same press-and-drag interaction as a rectangle and shows live horizontal and vertical deltas from the starting point. The reading remains after release until you measure again or switch tools. It is an editor-only overlay and never changes the image or adds an undo entry.
 
 - `Alt+P`: Freehand pen
 - `Alt+L`: Line
 - `Alt+R`: Rectangle
+- `Alt+D`: Measure pixels
 - `Alt+T`: Text
 - `Alt+M`: Mosaic
 - `Alt+C`: Line width and color

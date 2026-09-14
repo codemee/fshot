@@ -17,6 +17,7 @@ class Tool(str, Enum):
     PEN = "pen"
     LINE = "line"
     RECTANGLE = "rectangle"
+    MEASURE = "measure"
     TEXT = "text"
     MOSAIC = "mosaic"
 

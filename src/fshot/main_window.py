@@ -458,12 +458,14 @@ class EditorWindow(QMainWindow):
         self.pen_action = self._tool_action("Pen", "Alt+P", Tool.PEN, "pen")
         self.line_action = self._tool_action("Line", "Alt+L", Tool.LINE, "line")
         self.rect_action = self._tool_action("Rectangle", "Alt+R", Tool.RECTANGLE, "rectangle")
+        self.measure_action = self._tool_action("Measure pixels", "Alt+D", Tool.MEASURE, "measure")
         self.text_action = self._tool_action("Text", "Alt+T", Tool.TEXT, "text")
         self.mosaic_action = self._tool_action("Mosaic", "Alt+M", Tool.MOSAIC, "mosaic")
         for action in [
             self.pen_action,
             self.line_action,
             self.rect_action,
+            self.measure_action,
             self.text_action,
             self.mosaic_action,
         ]:
@@ -1274,6 +1276,7 @@ class EditorWindow(QMainWindow):
             self.pen_action,
             self.line_action,
             self.rect_action,
+            self.measure_action,
             self.text_action,
             self.mosaic_action,
         ]:
@@ -1343,6 +1346,7 @@ class EditorWindow(QMainWindow):
             (self.pen_action, "pen"),
             (self.line_action, "line"),
             (self.rect_action, "rectangle"),
+            (self.measure_action, "measure"),
             (self.text_action, "text"),
             (self.mosaic_action, "mosaic"),
             (self.style_action, "line_color"),
@@ -1395,6 +1399,7 @@ class EditorWindow(QMainWindow):
         for action, name in (
             (self.pen_action, "pen"),
             (self.rect_action, "rectangle"),
+            (self.measure_action, "measure"),
             (self.text_action, "text"),
             (self.mosaic_action, "mosaic"),
             (self.undo_action, "undo"),

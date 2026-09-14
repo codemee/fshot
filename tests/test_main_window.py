@@ -40,6 +40,7 @@ def test_editor_toolbar_uses_compact_buttons(qt_app):
         for button in buttons
         if button is not line_end_button
     )
+    assert window.measure_action.shortcut() == QKeySequence("Alt+D")
 
 
 def test_line_button_and_dropdown_are_flush(qt_app):

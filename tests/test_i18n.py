@@ -69,6 +69,7 @@ def test_language_change_retranslates_toolbar(qt_app, tmp_path):
     manager.set_mode(LanguageMode.ZH_TW)
 
     assert window.save_action.toolTip().startswith("儲存 (")
+    assert window.measure_action.toolTip().startswith("丈量像素 (")
     assert "繁體中文" in window.language_action.toolTip()
 
 

@@ -111,6 +111,32 @@ def tool_icon(
         painter.drawLine(7, 25, 15, 23)
     elif name == "rectangle":
         painter.drawRoundedRect(7, 8, 18, 16, 2, 2)
+    elif name == "measure":
+        painter.setPen(
+            QPen(
+                base_ink,
+                1.35,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+                Qt.PenJoinStyle.RoundJoin,
+            )
+        )
+        painter.drawPolygon(
+            QPolygon(
+                [
+                    QPoint(6, 5),
+                    QPoint(12, 5),
+                    QPoint(12, 20),
+                    QPoint(27, 20),
+                    QPoint(27, 26),
+                    QPoint(6, 26),
+                ]
+            )
+        )
+        for y, length in ((10, 3), (14, 4), (18, 3)):
+            painter.drawLine(6, y, 6 + length, y)
+        for x, length in ((16, 3), (20, 4), (24, 3)):
+            painter.drawLine(x, 26, x, 26 - length)
     elif name == "text":
         painter.drawLine(8, 8, 24, 8)
         painter.drawLine(16, 8, 16, 25)
