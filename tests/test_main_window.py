@@ -1,6 +1,15 @@
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QImage, QKeySequence
-from PySide6.QtWidgets import QScrollArea, QStyleOptionViewItem, QToolBar, QToolButton, QWidget
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import (
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QStyleOptionViewItem,
+    QToolBar,
+    QToolButton,
+    QWidget,
+)
 
 from fshot import __version__
 from fshot.canvas import CANVAS_PADDING
@@ -41,6 +50,62 @@ def test_editor_toolbar_uses_compact_buttons(qt_app):
         if button is not line_end_button
     )
     assert window.measure_action.shortcut() == QKeySequence("Alt+D")
+    assert window.rotate_action.shortcut() == QKeySequence("Alt+C")
+    assert window.resize_image_action.shortcut() == QKeySequence("Alt+S")
+    assert window.flip_horizontal_action.shortcut() == QKeySequence("Alt+H")
+    assert window.flip_vertical_action.shortcut() == QKeySequence("Alt+V")
+    assert window.style_action.shortcut().isEmpty()
+    actions = toolbar.actions()
+    assert actions.index(window.mosaic_action) < actions.index(window.rotate_action)
+    assert actions.index(window.rotate_action) < actions.index(window.flip_horizontal_action)
+    assert actions.index(window.flip_horizontal_action) < actions.index(window.flip_vertical_action)
+    assert actions.index(window.flip_vertical_action) < actions.index(window.resize_image_action)
+    assert actions.index(window.rotate_action) < actions.index(window.resize_image_action)
+    assert actions.index(window.resize_image_action) < actions.index(window.style_action)
+
+
+def test_image_transform_actions_modify_current_canvas(qt_app):
+    from fshot.main_window import ArrowSpinBox, EditorWindow
+
+    window = EditorWindow()
+    window._add_image(QImage(10, 8, QImage.Format.Format_ARGB32), "example.png")
+    window.show()
+    qt_app.processEvents()
+    canvas = window._current_canvas()
+
+    window.rotate_current_clockwise()
+    assert (canvas.image.width(), canvas.image.height()) == (8, 10)
+
+    window.flip_current_horizontal()
+    window.flip_current_vertical()
+    assert (canvas.image.width(), canvas.image.height()) == (8, 10)
+
+    menu = window._create_resize_menu()
+    percent = menu.findChild(ArrowSpinBox, "resizePercentSpin")
+    apply_button = menu.findChild(QPushButton, "resizeApplyButton")
+
+    assert percent is not None
+    assert apply_button is not None
+    assert percent.buttonSymbols() == QSpinBox.ButtonSymbols.NoButtons
+    assert percent.minimumWidth() >= 110
+    assert percent.up_button.property("spinArrow") is True
+    assert percent.down_button.property("spinArrow") is True
+    percent.setValue(50)
+    apply_button.click()
+
+    assert (canvas.image.width(), canvas.image.height()) == (4, 5)
+    assert window._resize_percent == 50
+    assert window._current_doc().is_dirty
+
+    enter_menu = window._create_resize_menu()
+    enter_percent = enter_menu.findChild(ArrowSpinBox, "resizePercentSpin")
+    enter_percent.setValue(50)
+    enter_menu.popup(QPoint(0, 0))
+    enter_percent.setFocus()
+    qt_app.processEvents()
+    QTest.keyClick(enter_percent.lineEdit(), Qt.Key.Key_Return)
+
+    assert (canvas.image.width(), canvas.image.height()) == (2, 2)
 
 
 def test_line_button_and_dropdown_are_flush(qt_app):

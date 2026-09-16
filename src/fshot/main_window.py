@@ -6,10 +6,20 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import QPoint, QRect, QSettings, QSize, Qt, Signal
-from PySide6.QtGui import QAction, QActionGroup, QColor, QIcon, QKeySequence, QPainter, QPen, QPixmap
+from PySide6.QtCore import QEvent, QPoint, QRect, QSettings, QSize, Qt, Signal
+from PySide6.QtGui import (
+    QAction,
+    QActionGroup,
+    QColor,
+    QIcon,
+    QKeySequence,
+    QPainter,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QAbstractButton,
+    QApplication,
     QCheckBox,
     QColorDialog,
     QComboBox,
@@ -147,6 +157,32 @@ class ArrowSpinBox(QSpinBox):
         return button
 
 
+class ReturnSubmitMenu(QMenu):
+    submitted = Signal()
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.aboutToShow.connect(self._start_watching_return)
+        self.aboutToHide.connect(self._stop_watching_return)
+
+    def _start_watching_return(self) -> None:
+        QApplication.instance().installEventFilter(self)
+
+    def _stop_watching_return(self) -> None:
+        QApplication.instance().removeEventFilter(self)
+
+    def eventFilter(self, watched, event) -> bool:
+        if (
+            self.isVisible()
+            and event.type() == QEvent.Type.KeyPress
+            and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
+        ):
+            event.accept()
+            self.submitted.emit()
+            return True
+        return super().eventFilter(watched, event)
+
+
 class TabStatusWidget(QWidget):
     def __init__(self, close_button: QWidget | None = None, marker_on_left: bool = False) -> None:
         super().__init__()
@@ -220,6 +256,7 @@ class EditorWindow(QMainWindow):
         self.hotkey_bindings = default_hotkeys()
         self._hotkey_validator: Callable | None = None
         self._hotkey_applier: Callable | None = None
+        self._resize_percent = 50
         self.active_tool = Tool.PEN
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
@@ -415,6 +452,21 @@ class EditorWindow(QMainWindow):
         if canvas:
             canvas.set_zoom(1.0)
 
+    def rotate_current_clockwise(self) -> None:
+        canvas = self._current_canvas()
+        if canvas:
+            canvas.rotate_clockwise()
+
+    def flip_current_horizontal(self) -> None:
+        canvas = self._current_canvas()
+        if canvas:
+            canvas.flip_horizontal()
+
+    def flip_current_vertical(self) -> None:
+        canvas = self._current_canvas()
+        if canvas:
+            canvas.flip_vertical()
+
     def closeEvent(self, event) -> None:
         if not self.confirm_discard_all():
             event.ignore()
@@ -496,8 +548,27 @@ class EditorWindow(QMainWindow):
                 toolbar.addAction(action)
         self.pen_action.setChecked(True)
 
+        self.rotate_action = QAction(tool_icon("rotate_clockwise"), "Rotate clockwise", self)
+        self.rotate_action.setShortcut("Alt+C")
+        self.rotate_action.triggered.connect(self.rotate_current_clockwise)
+        toolbar.addAction(self.rotate_action)
+
+        self.flip_horizontal_action = QAction(tool_icon("flip_horizontal"), "Flip horizontal", self)
+        self.flip_horizontal_action.setShortcut("Alt+H")
+        self.flip_horizontal_action.triggered.connect(self.flip_current_horizontal)
+        toolbar.addAction(self.flip_horizontal_action)
+
+        self.flip_vertical_action = QAction(tool_icon("flip_vertical"), "Flip vertical", self)
+        self.flip_vertical_action.setShortcut("Alt+V")
+        self.flip_vertical_action.triggered.connect(self.flip_current_vertical)
+        toolbar.addAction(self.flip_vertical_action)
+
+        self.resize_image_action = QAction(tool_icon("resize_down"), "Resize image", self)
+        self.resize_image_action.setShortcut("Alt+S")
+        self.resize_image_action.triggered.connect(self._show_resize_panel)
+        toolbar.addAction(self.resize_image_action)
+
         self.style_action = QAction(self._style_icon(), "Line and color", self)
-        self.style_action.setShortcut("Alt+C")
         self.style_action.triggered.connect(self._show_style_panel)
         toolbar.addAction(self.style_action)
         toolbar.addSeparator()
@@ -671,6 +742,55 @@ class EditorWindow(QMainWindow):
         self.line_end_button.setProperty("lineSelected", checked)
         self.line_end_button.style().unpolish(self.line_end_button)
         self.line_end_button.style().polish(self.line_end_button)
+
+    def _show_resize_panel(self) -> None:
+        menu = self._create_resize_menu()
+        menu.exec(self.mapToGlobal(self._toolbar_anchor(self.resize_image_action)))
+
+    def _create_resize_menu(self) -> QMenu:
+        menu = ReturnSubmitMenu(self)
+        menu.setObjectName("resizeImageMenu")
+        panel = QWidget(menu)
+        panel.setObjectName("resizeImagePanel")
+        layout = QGridLayout(panel)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setHorizontalSpacing(10)
+        layout.setVerticalSpacing(8)
+
+        label = QLabel(self._tr("resize_percent"))
+        percent = ArrowSpinBox()
+        percent.setObjectName("resizePercentSpin")
+        percent.setRange(1, 99)
+        percent.setSuffix(" %")
+        percent.setMinimumWidth(110)
+        percent.setValue(self._resize_percent)
+        apply_button = QPushButton(self._tr("resize_apply"))
+        apply_button.setObjectName("resizeApplyButton")
+        apply_button.setAutoDefault(False)
+        apply_button.setDefault(False)
+
+        def apply_resize(_checked: bool = False) -> None:
+            self._apply_resize_percent(percent.value(), menu)
+
+        apply_button.clicked.connect(apply_resize)
+        menu.submitted.connect(apply_resize)
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(percent, 0, 1)
+        layout.addWidget(apply_button, 1, 0, 1, 2)
+
+        action = QWidgetAction(menu)
+        action.setDefaultWidget(panel)
+        menu.addAction(action)
+        return menu
+
+    def _apply_resize_percent(self, percent: int, menu: QMenu | None = None) -> None:
+        canvas = self._current_canvas()
+        if canvas is None:
+            return
+        self._resize_percent = percent
+        canvas.scale_down(percent)
+        if menu is not None:
+            menu.close()
 
     def _show_style_panel(self) -> None:
         menu = QMenu(self)
@@ -1283,6 +1403,10 @@ class EditorWindow(QMainWindow):
             action.setEnabled(has_doc)
         self.line_end_button.setEnabled(has_doc)
         self.style_action.setEnabled(has_doc)
+        self.rotate_action.setEnabled(has_doc)
+        self.flip_horizontal_action.setEnabled(has_doc)
+        self.flip_vertical_action.setEnabled(has_doc)
+        self.resize_image_action.setEnabled(has_doc)
         self.copy_action.setEnabled(has_doc)
         self.save_action.setEnabled(bool(doc and doc.can_save))
         self.save_as_action.setEnabled(has_doc)
@@ -1351,6 +1475,10 @@ class EditorWindow(QMainWindow):
             (self.mosaic_action, "mosaic"),
             (self.style_action, "line_color"),
             (self.undo_action, "undo"),
+            (self.rotate_action, "rotate_clockwise"),
+            (self.flip_horizontal_action, "flip_horizontal"),
+            (self.flip_vertical_action, "flip_vertical"),
+            (self.resize_image_action, "resize_image"),
             (self.copy_action, "copy"),
             (self.paste_action, "paste"),
             (self.save_action, "save"),
@@ -1403,6 +1531,10 @@ class EditorWindow(QMainWindow):
             (self.text_action, "text"),
             (self.mosaic_action, "mosaic"),
             (self.undo_action, "undo"),
+            (self.rotate_action, "rotate_clockwise"),
+            (self.flip_horizontal_action, "flip_horizontal"),
+            (self.flip_vertical_action, "flip_vertical"),
+            (self.resize_image_action, "resize_down"),
             (self.copy_action, "copy"),
             (self.save_action, "save"),
             (self.save_as_action, "save_as"),

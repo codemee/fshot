@@ -70,6 +70,10 @@ def test_language_change_retranslates_toolbar(qt_app, tmp_path):
 
     assert window.save_action.toolTip().startswith("儲存 (")
     assert window.measure_action.toolTip().startswith("丈量像素 (")
+    assert window.rotate_action.toolTip().startswith("順時針旋轉 90° (")
+    assert window.flip_horizontal_action.toolTip().startswith("水平鏡射 (")
+    assert window.flip_vertical_action.toolTip().startswith("垂直鏡射 (")
+    assert window.resize_image_action.toolTip().startswith("依比例縮小圖片 (")
     assert "繁體中文" in window.language_action.toolTip()
 
 
@@ -89,6 +93,10 @@ def test_toolbar_tooltips_include_shortcuts(qt_app, tmp_path):
     )
     assert native_save_text in window.save_action.toolTip()
     assert native_zoom in window.zoom_in_action.toolTip()
+    native_rotate = QKeySequence("Alt+C").toString(QKeySequence.SequenceFormat.NativeText)
+    native_resize = QKeySequence("Alt+S").toString(QKeySequence.SequenceFormat.NativeText)
+    assert native_rotate in window.rotate_action.toolTip()
+    assert native_resize in window.resize_image_action.toolTip()
 
 
 def test_line_endpoint_panel_is_translated(qt_app, tmp_path):

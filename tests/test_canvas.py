@@ -65,3 +65,60 @@ def test_measure_tool_reports_pixel_deltas_without_modifying_image(qt_app):
 
     canvas.set_tool(Tool.RECTANGLE)
     assert canvas.measurement is None
+
+
+def test_rotate_clockwise_changes_dimensions_and_is_undoable(qt_app):
+    image = QImage(2, 3, QImage.Format.Format_ARGB32)
+    image.fill(QColor("white"))
+    image.setPixelColor(0, 0, QColor("red"))
+    image.setPixelColor(0, 2, QColor("blue"))
+    canvas = ImageCanvas(image, DrawingSettings.default())
+
+    canvas.rotate_clockwise()
+
+    assert (canvas.image.width(), canvas.image.height()) == (3, 2)
+    assert canvas.image.pixelColor(2, 0) == QColor("red")
+    assert canvas.image.pixelColor(0, 0) == QColor("blue")
+    assert canvas.can_undo
+
+    canvas.undo()
+
+    assert (canvas.image.width(), canvas.image.height()) == (2, 3)
+    assert canvas.image.pixelColor(0, 0) == QColor("red")
+
+
+def test_horizontal_and_vertical_flips_are_undoable(qt_app):
+    image = QImage(3, 2, QImage.Format.Format_ARGB32)
+    image.fill(QColor("white"))
+    image.setPixelColor(0, 0, QColor("red"))
+    image.setPixelColor(2, 1, QColor("blue"))
+    canvas = ImageCanvas(image, DrawingSettings.default())
+
+    canvas.flip_horizontal()
+    assert canvas.image.pixelColor(2, 0) == QColor("red")
+    assert canvas.image.pixelColor(0, 1) == QColor("blue")
+    canvas.undo()
+    assert canvas.image.pixelColor(0, 0) == QColor("red")
+
+    canvas.flip_vertical()
+    assert canvas.image.pixelColor(0, 1) == QColor("red")
+    assert canvas.image.pixelColor(2, 0) == QColor("blue")
+    canvas.undo()
+    assert canvas.image.pixelColor(2, 1) == QColor("blue")
+
+
+def test_scale_down_resamples_dimensions_and_rejects_invalid_ratios(qt_app):
+    image = QImage(10, 8, QImage.Format.Format_ARGB32)
+    image.fill(QColor("red"))
+    canvas = ImageCanvas(image, DrawingSettings.default())
+
+    assert not canvas.scale_down(0)
+    assert not canvas.scale_down(100)
+    assert not canvas.can_undo
+
+    assert canvas.scale_down(50)
+    assert (canvas.image.width(), canvas.image.height()) == (5, 4)
+    assert canvas.can_undo
+
+    canvas.undo()
+    assert (canvas.image.width(), canvas.image.height()) == (10, 8)

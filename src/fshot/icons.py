@@ -159,6 +159,84 @@ def tool_icon(
         painter.drawLine(12, 12, 6, 12)
         painter.drawLine(6, 12, 10, 8)
         painter.drawLine(6, 12, 10, 16)
+    elif name == "rotate_clockwise":
+        painter.setPen(
+            QPen(
+                base_ink,
+                1.35,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+                Qt.PenJoinStyle.RoundJoin,
+            )
+        )
+        # Put the clockwise arrow at the upper-left and show the picture
+        # itself falling toward the right.
+        arrow = QPainterPath(QPoint(4, 15))
+        arrow.cubicTo(5, 8, 10, 6, 18, 8)
+        painter.drawPath(arrow)
+        painter.drawLine(18, 8, 14, 5)
+        painter.drawLine(18, 8, 14, 11)
+
+        painter.save()
+        painter.translate(18, 20)
+        painter.rotate(18)
+        painter.drawRoundedRect(-8, -7, 16, 14, 1.5, 1.5)
+        painter.drawEllipse(-5, -4, 2, 2)
+        painter.drawPolyline(
+            QPolygon(
+                [
+                    QPoint(-6, 5),
+                    QPoint(-2, 1),
+                    QPoint(1, 4),
+                    QPoint(4, 1),
+                    QPoint(6, 5),
+                ]
+            )
+        )
+        painter.restore()
+    elif name == "flip_horizontal":
+        painter.setPen(
+            QPen(
+                base_ink,
+                1.35,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+                Qt.PenJoinStyle.RoundJoin,
+            )
+        )
+        painter.drawPolygon(QPolygon([QPoint(5, 26), QPoint(13, 26), QPoint(13, 6)]))
+        painter.drawPolygon(QPolygon([QPoint(27, 26), QPoint(19, 26), QPoint(19, 6)]))
+        painter.setPen(QPen(base_ink, 1.1, Qt.PenStyle.DashLine))
+        painter.drawLine(16, 5, 16, 27)
+    elif name == "flip_vertical":
+        painter.setPen(
+            QPen(
+                base_ink,
+                1.35,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+                Qt.PenJoinStyle.RoundJoin,
+            )
+        )
+        painter.drawPolygon(QPolygon([QPoint(6, 13), QPoint(26, 13), QPoint(6, 5)]))
+        painter.drawPolygon(QPolygon([QPoint(6, 19), QPoint(26, 19), QPoint(6, 27)]))
+        painter.setPen(QPen(base_ink, 1.1, Qt.PenStyle.DashLine))
+        painter.drawLine(5, 16, 27, 16)
+    elif name == "resize_down":
+        painter.setPen(QPen(base_ink, 1.25, Qt.PenStyle.DashLine))
+        painter.drawRect(5, 5, 22, 22)
+        painter.setPen(
+            QPen(
+                base_ink,
+                1.5,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+                Qt.PenJoinStyle.RoundJoin,
+            )
+        )
+        painter.drawLine(25, 25, 15, 15)
+        painter.drawLine(15, 15, 16, 21)
+        painter.drawLine(15, 15, 21, 16)
     elif name == "copy":
         painter.drawRoundedRect(11, 7, 13, 16, 2, 2)
         painter.drawRoundedRect(7, 11, 13, 16, 2, 2)

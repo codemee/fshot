@@ -3,7 +3,18 @@ from __future__ import annotations
 import math
 
 from PySide6.QtCore import QPoint, QPointF, QRect, Qt, Signal
-from PySide6.QtGui import QColor, QCursor, QFont, QImage, QMouseEvent, QPainter, QPen, QPolygon, QPixmap
+from PySide6.QtGui import (
+    QColor,
+    QCursor,
+    QFont,
+    QImage,
+    QMouseEvent,
+    QPainter,
+    QPen,
+    QPolygon,
+    QPixmap,
+    QTransform,
+)
 from PySide6.QtWidgets import QInputDialog, QSizePolicy, QWidget
 
 from fshot.settings import DrawingSettings, LineEndStyle, Tool
@@ -70,10 +81,39 @@ class ImageCanvas(QWidget):
         if not self._undo:
             return
         self.image = self._undo.pop()
-        self._crop_rect = QRect(0, 0, self.image.width(), self.image.height())
-        self._sync_size()
-        self.changed.emit()
-        self.update()
+        self._image_geometry_changed()
+
+    def rotate_clockwise(self) -> None:
+        self._push_undo()
+        self.image = self.image.transformed(QTransform().rotate(90))
+        self._image_geometry_changed()
+
+    def flip_horizontal(self) -> None:
+        self._push_undo()
+        self.image = self.image.flipped(Qt.Orientation.Horizontal)
+        self._image_geometry_changed()
+
+    def flip_vertical(self) -> None:
+        self._push_undo()
+        self.image = self.image.flipped(Qt.Orientation.Vertical)
+        self._image_geometry_changed()
+
+    def scale_down(self, percent: int) -> bool:
+        if not 1 <= percent < 100:
+            return False
+        width = max(1, round(self.image.width() * percent / 100))
+        height = max(1, round(self.image.height() * percent / 100))
+        if width == self.image.width() and height == self.image.height():
+            return False
+        self._push_undo()
+        self.image = self.image.scaled(
+            width,
+            height,
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self._image_geometry_changed()
+        return True
 
     def export_image(self) -> QImage:
         return self.image.copy()
@@ -226,6 +266,17 @@ class ImageCanvas(QWidget):
         self._undo.append(self.image.copy())
         if len(self._undo) > 50:
             self._undo.pop(0)
+
+    def _image_geometry_changed(self) -> None:
+        self._start = None
+        self._last = None
+        self._preview = None
+        self._crop_rect = QRect(0, 0, self.image.width(), self.image.height())
+        self._crop_handle = None
+        self._crop_start_rect = None
+        self._sync_size()
+        self.changed.emit()
+        self.update()
 
     def _pen(self) -> QPen:
         pen = QPen(self.settings.color, self.settings.line_width)

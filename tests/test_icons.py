@@ -58,6 +58,22 @@ def test_pen_tool_icon_is_vertically_centered(qt_app):
     assert abs(((top + bottom) / 2) - 15.5) <= 1.5
 
 
+def test_rotate_icon_has_upper_left_arrow_and_right_tilted_image(qt_app):
+    points = _opaque_points(tool_icon("rotate_clockwise"), 32)
+
+    assert any(x <= 8 and y <= 15 for x, y in points)
+    assert any(x >= 24 and y >= 20 for x, y in points)
+
+
+def test_flip_icons_show_distinct_horizontal_and_vertical_axes(qt_app):
+    horizontal = _opaque_points(tool_icon("flip_horizontal"), 32)
+    vertical = _opaque_points(tool_icon("flip_vertical"), 32)
+
+    assert horizontal != vertical
+    assert len({point for point in horizontal if point[0] == 16}) >= 8
+    assert len({point for point in vertical if point[1] == 16}) >= 8
+
+
 def test_line_tool_icon_reflects_endpoint_styles(qt_app):
     plain = tool_icon("line")
     styled = tool_icon("line", line_start="arrow", line_end="circle")

@@ -80,6 +80,7 @@ Editor shortcuts:
 
 The line tool also creates arrows and endpoint markers. Use the dropdown beside the line button to set the start and end independently to none, an arrow, or a solid circle.
 The pixel measurement tool uses the same press-and-drag interaction as a rectangle and shows live horizontal and vertical deltas from the starting point. The reading remains after release until you measure again or switch tools. It is an editor-only overlay and never changes the image or adds an undo entry.
+The leading editor-tool group can also rotate the current image 90° clockwise or flip it horizontally or vertically. The downscale button opens a panel matching the line-style controls and accepts a 1–99% physical image size. These operations mark the document as modified and can be undone.
 
 - `Alt+P`: Freehand pen
 - `Alt+L`: Line
@@ -87,7 +88,10 @@ The pixel measurement tool uses the same press-and-drag interaction as a rectang
 - `Alt+D`: Measure pixels
 - `Alt+T`: Text
 - `Alt+M`: Mosaic
-- `Alt+C`: Line width and color
+- `Alt+C`: Rotate clockwise 90°
+- `Alt+S`: Scale image down
+- `Alt+H`: Flip horizontally
+- `Alt+V`: Flip vertically
 - `Ctrl++` / `Ctrl+=`: Zoom in
 - `Ctrl+-`: Zoom out
 - `Ctrl+0`: Reset zoom
