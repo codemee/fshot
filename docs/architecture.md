@@ -16,6 +16,7 @@
   - 建立 `QApplication`、`FShotApplication`、系統匣圖示。
   - Windows 使用 `RegisterHotKey` 接收全域快捷鍵，避免快捷鍵送到焦點視窗。
   - 收到快捷鍵後隱藏編輯視窗，呼叫 `CaptureService`，截圖完成後加入編輯頁籤並複製到剪貼簿。
+  - Windows 恢復編輯器時，原生前景切換採 best-effort；拖放尚未放開等情況若被系統拒絕，仍保留視窗顯示、Z-order fallback 與延遲重試，不讓例外中斷截圖流程。
   - 系統匣提供手動及每日自動更新檢查；確認更新後先處理未儲存資料，再啟動外部 helper 並正常結束程式，重啟時顯示實際更新結果。
 
 - `updates.py`

@@ -74,7 +74,7 @@ Linux is not currently a primary target. X11 and Wayland differ substantially in
 - On macOS, custom Ctrl/Shift/Option plus letter combinations trigger the intended capture mode and remain configured after restart.
 - Immediate and delayed capture behave consistently: Windows region and window/control selection freeze the desktop after the countdown, while other modes resolve the target before counting down and capturing the live image.
 - Full-screen, region, focused-window, and selected window/control capture work.
-- After a successful capture, the FShot editor is restored and requests foreground activation. If the foreground lock rejects the ordinary `SetForegroundWindow` call, a brief topmost/not-topmost Z-order raise is used as a fallback. FShot checks and reasserts the editor foreground state 200ms after capture completes.
+- After a successful capture, the FShot editor is restored and requests foreground activation. If the foreground lock or an unfinished drag-and-drop operation rejects `SetForegroundWindow`, the error is treated as a best-effort activation failure and cannot abort capture; a brief topmost/not-topmost Z-order raise remains the fallback. FShot checks and reasserts the editor foreground state 200ms after capture completes.
 - Browser transient URLs/tooltips are not mistaken for the focused window.
 - Escape cancels delayed countdowns and region/window selection.
 - Include Cursor captures the current real pointer.

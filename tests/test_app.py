@@ -82,3 +82,46 @@ def test_activate_window_raises_z_order_when_initial_request_is_denied(qt_app, m
 
     assert attempts == [123, 123]
     assert [call[1] for call in positions] == [-1, -2]
+
+
+def test_activate_window_tolerates_foreground_errors_during_drag(qt_app, monkeypatch):
+    attempts = []
+    positions = []
+
+    def set_foreground(hwnd):
+        attempts.append(hwnd)
+        raise RuntimeError("foreground activation denied while dragging")
+
+    window = SimpleNamespace(
+        showNormal=lambda: None,
+        raise_=lambda: None,
+        activateWindow=lambda: None,
+        winId=lambda: 123,
+    )
+    monkeypatch.setattr("fshot.app.sys.platform", "win32")
+    monkeypatch.setattr(
+        "fshot.app.win32gui",
+        SimpleNamespace(
+            ShowWindow=lambda *_args: None,
+            BringWindowToTop=lambda _hwnd: None,
+            SetForegroundWindow=set_foreground,
+            GetForegroundWindow=lambda: 999,
+            SetWindowPos=lambda *args: positions.append(args),
+        ),
+    )
+    monkeypatch.setattr(
+        "fshot.app.win32con",
+        SimpleNamespace(
+            SW_RESTORE=9,
+            SWP_NOMOVE=1,
+            SWP_NOSIZE=2,
+            SWP_SHOWWINDOW=4,
+            HWND_TOPMOST=-1,
+            HWND_NOTOPMOST=-2,
+        ),
+    )
+
+    _activate_window(window)
+
+    assert attempts == [123, 123]
+    assert [call[1] for call in positions] == [-1, -2]

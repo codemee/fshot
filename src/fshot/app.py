@@ -66,15 +66,29 @@ def _activate_window(window) -> None:
     QApplication.processEvents()
     if sys.platform == "win32":
         hwnd = int(window.winId())
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-        win32gui.BringWindowToTop(hwnd)
-        win32gui.SetForegroundWindow(hwnd)
-        if win32gui.GetForegroundWindow() == hwnd:
+        try:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            win32gui.BringWindowToTop(hwnd)
+            win32gui.SetForegroundWindow(hwnd)
+        except Exception:
+            # Windows can reject foreground activation while another process
+            # owns mouse capture, notably during an in-progress drag-and-drop.
+            pass
+        try:
+            is_foreground = win32gui.GetForegroundWindow() == hwnd
+        except Exception:
+            is_foreground = False
+        if is_foreground:
             return
         flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW
-        win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, flags)
-        win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, flags)
-        win32gui.SetForegroundWindow(hwnd)
+        try:
+            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, flags)
+            win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, flags)
+            win32gui.SetForegroundWindow(hwnd)
+        except Exception:
+            # Showing the editor is sufficient; the delayed activation retry
+            # can request focus again after the input transaction settles.
+            pass
 
 
 class WindowsHotkeyFilter(QAbstractNativeEventFilter):

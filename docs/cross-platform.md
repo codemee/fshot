@@ -100,7 +100,7 @@ Linux 尚未作為主要目標。Wayland/X11 差異很大，尤其是全域快�
 - macOS 自訂 Ctrl／Shift／Option 與字母組合可觸發正確的截圖方式，重新啟動後設定仍保留。
 - 無延遲和有延遲流程都符合：Windows 矩形區域與視窗／控制項選取於倒數後凍結桌面，其他模式則先決定目標再倒數擷取。
 - 全螢幕、矩形、焦點視窗、選取視窗/控制項都可用。
-- 擷取成功後 FShot 編輯器會恢復並要求成為 Windows 前景視窗；若一般 `SetForegroundWindow` 被前景鎖定拒絕，會以短暫 topmost／not-topmost 的 Z-order 提升作為 fallback。擷取完成 200ms 後會再確認一次編輯器位於前景。
+- 擷取成功後 FShot 編輯器會恢復並要求成為 Windows 前景視窗；若一般 `SetForegroundWindow` 被前景鎖定或尚未結束的拖放操作拒絕，錯誤會被視為 best-effort 失敗，並以短暫 topmost／not-topmost 的 Z-order 提升作為 fallback，不中斷截圖流程。擷取完成 200ms 後會再確認一次編輯器位於前景。
 - Chrome 等具有 transient popup 的應用程式，焦點視窗擷取不會誤截連結網址或 tooltip。
 - ESC 可取消延遲倒數及矩形／視窗選取。
 - 包含游標時顯示當下真實游標。
