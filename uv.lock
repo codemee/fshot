@@ -31,7 +31,7 @@ wheels = [
 
 [[package]]
 name = "fshot"
-version = "0.0.17"
+version = "0.0.18"
 source = { editable = "." }
 dependencies = [
     { name = "comtypes", marker = "sys_platform == 'win32'" },

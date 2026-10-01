@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, QRect, Qt
-from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPolygon, QPixmap
+from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPicture, QPolygon, QPixmap
 
 
 INK = QColor("#5c6269")
@@ -75,9 +75,8 @@ def tool_icon(
     line_start: str = "none",
     line_end: str = "none",
 ) -> QIcon:
-    pixmap = QPixmap(32, 32)
-    pixmap.fill(Qt.GlobalColor.transparent)
-    painter = _painter(pixmap)
+    picture = QPicture()
+    painter = _painter(picture)
     base_ink = DARK_INK if dark else INK
     ink = color or base_ink
     icon_width = 1.45 if name != "style" else max(1.3, min(5.0, width * 0.45))
@@ -389,7 +388,18 @@ def tool_icon(
             painter.drawText(QRect(1, 3, 30, 26), Qt.AlignmentFlag.AlignCenter, label)
 
     painter.end()
-    return QIcon(pixmap)
+    icon = QIcon()
+    for size in (20, 32, 40):
+        pixmap = QPixmap(size, size)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        if size == 40:
+            pixmap.setDevicePixelRatio(2)
+        painter = _painter(pixmap)
+        painter.scale(size / 32, size / 32)
+        painter.drawPicture(0, 0, picture)
+        painter.end()
+        icon.addPixmap(pixmap)
+    return icon
 
 
 def line_end_style_icon(style: str, endpoint: str, dark: bool = False) -> QIcon:
@@ -441,8 +451,8 @@ def _draw_magnifier(painter: QPainter) -> None:
     painter.drawLine(20, 20, 26, 26)
 
 
-def _painter(pixmap: QPixmap) -> QPainter:
-    painter = QPainter(pixmap)
+def _painter(device: QPixmap | QPicture) -> QPainter:
+    painter = QPainter(device)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
     return painter
 

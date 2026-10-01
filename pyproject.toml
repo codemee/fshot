@@ -1,6 +1,6 @@
 [project]
 name = "fshot"
-version = "0.0.17"
+version = "0.0.18"
 description = "Keyboard-first cross-platform screenshot utility"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -17,7 +17,7 @@ dependencies = [
     "uv-tool-updater>=0.1.9,<0.2",
 ]
 
-[project.scripts]
+[project.gui-scripts]
 fshot = "fshot.app:main"
 
 [project.urls]

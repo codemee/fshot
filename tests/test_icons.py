@@ -1,3 +1,5 @@
+from PySide6.QtCore import QSize
+
 from fshot.icons import camera_icon, line_end_style_icon, tool_icon, tray_icon
 
 
@@ -56,6 +58,14 @@ def test_pen_tool_icon_is_vertically_centered(qt_app):
     _left, top, _right, bottom = _opaque_rect(tool_icon("pen"), 32)
 
     assert abs(((top + bottom) / 2) - 15.5) <= 1.5
+
+
+def test_tool_icon_has_native_toolbar_sizes(qt_app):
+    icon = tool_icon("pen")
+
+    assert QSize(20, 20) in icon.availableSizes()
+    assert _opaque_bounds(icon, 20)[0] > 0
+    assert icon.pixmap(QSize(20, 20), 2.0).size() == QSize(40, 40)
 
 
 def test_rotate_icon_has_upper_left_arrow_and_right_tilted_image(qt_app):
