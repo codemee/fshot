@@ -31,6 +31,9 @@
   - GitHub Release 發布後，由 `package-apps.yml` 自動在原生 runner 建置、驗證並附加 EXE、DMG 與 SHA-256；不支援 Intel Mac。
 
 - `capture.py`
+  - Windows 區域及視窗／控制項選取共用每個螢幕獨立的遮罩及快照裁切，分別套用該螢幕 Qt 縮放；以螢幕原點及 Qt 邏輯尺寸乘 DPR 配對 Win32 原生螢幕，不依賴可能為 EDID 名稱的 QScreen.name。原生游標及 UIA 邊界轉換為各遮罩的邏輯座標繪製；跨螢幕框選／目標標示同步，點擊或取消時一併關閉所有遮罩，避免不同 DPI 下畫面與選取邊界錯位。
+  - 每次選取以 finally 清除遮罩間的循環參照、UIA 快取與快照，再 deleteLater；凍結的控制項也保留所屬視窗身分。UIA resolver 優先讀取現存元件，只有邊界失效才以識別條件查詢，限制候選數量及迭代時間，避免重複掃描完整控制項樹。
+  - 快照同步保存原視窗 HWND 及前後順序；選取不因原視窗消失而重新命中下層視窗。UIA live resolver 驗證 RuntimeId／識別資料及所屬視窗，重新建立的元件只允許唯一 AutomationId 配對；虛擬擷取前檢查目標位置仍屬於原 HWND，隱藏或遮擋時停止擷取。
   - 管理所有截圖模式：全螢幕、矩形區域、焦點視窗、選取視窗/控制項。
   - Windows 特有能力集中於此：焦點視窗與選取頂層視窗的 DWM frame bounds、UI Automation 控制項 hit-test、真實游標 bitmap、`mss`/`ImageGrab` fallback。
   - macOS 平台能力委派至 `platforms/macos.py`，包含權限、`AXFocusedWindow`、控制項 hit-test、游標與 Quartz event tap。
@@ -40,6 +43,14 @@
   - 使用 Accessibility 的 focused window，避免把同程序的 transient popup 當成焦點視窗。
   - 控制項 hit-test 結果必須落在游標下視窗內並包含游標座標，否則 fallback 至該視窗。
   - 管理 Screen Recording／Accessibility 權限、真實游標與可 consume 的全域快捷鍵。
+
+- `virtual_screen.py`
+  - 工具列切換透過 application validator 檢查啟用中的虛擬螢幕；`virtual_display_setup.py` 檢查 VDD 驅動檔／裝置，使用者同意後以 QProcess 啟動 UAC helper，備份設定並建立一個 4K 延伸螢幕。主程式維持事件迴圈，失敗或取消會回到實體模式。
+  - `VirtualCaptureSession` 提供快捷鍵模式的直接擷取與獨立 repeat 紀錄：前景視窗在事件處理前保存原生身分；選取控制項保留所屬 HWND，跨 DPI 移動後以 UIA RuntimeId 或唯一的 AutomationId／類型／class／名稱重新尋找元件，不按舊座標猜測。忽略部分 provider 在虛擬螢幕上的 offscreen 標記，但仍要求與所屬視窗相交並裁切其可見部分。區域擷取暫不支援。
+  - 依 Windows 顯示卡驅動名稱辨識已啟用的虛擬螢幕，自動選擇像素面積最大的目標；工具列切換統一處理安裝及建立確認，系統匣不提供額外入口。
+  - 使用 Win32 螢幕與視窗識別及原生像素座標，不以 Qt 的邏輯座標決定擷取區域。
+  - 保存原生 window rect 與 placement，使用 `MonitorFromWindow` 取得來源螢幕；寬、高分別依「原視窗可見尺寸 ÷ 來源螢幕完整尺寸 × 目標螢幕完整尺寸」換算。移動至目標 Work area 左上角後校正不同 DPI 的 DWM 邊框；預覽及擷取使用實際可見邊界。一般視窗還原 placement 後再依保存的原生座標還原位置、長寬；原本最大化者還原原 placement。桌面模式仍擷取整個螢幕。
+  - 保存原視窗 placement 並在 finally 還原；螢幕斷線或座標／尺寸改變會停止流程。缺少支援的 VDD 時，使用者同意後以 WinGet 安裝官方套件，再接續建立 4K 延伸螢幕；已有驅動則只詢問建立。
 
 - `main_window.py`
   - 編輯主視窗、toolbar、多頁籤、存檔/另存、縮放、設定面板。

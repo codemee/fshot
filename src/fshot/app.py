@@ -14,9 +14,10 @@ from PySide6.QtCore import (
     QStandardPaths,
     QTimer,
     QUrl,
+    Qt,
     Signal,
 )
-from PySide6.QtGui import QAction, QDesktopServices
+from PySide6.QtGui import QAction, QCursor, QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 from uv_tool_updater import (
     InstallStatus,
@@ -27,11 +28,12 @@ from uv_tool_updater import (
 )
 
 from fshot.capture import CaptureService
+from fshot.virtual_screen import VirtualCaptureSession
 from fshot.icons import tray_icon
 from fshot.hotkeys import HotkeyAction, HotkeyCombination, HotkeyStore, validate_hotkeys
 from fshot.i18n import LanguageManager
 from fshot.main_window import EditorWindow
-from fshot.settings import CaptureMode
+from fshot.settings import CaptureMode, CaptureSettings
 from fshot.theme import ThemeManager
 from fshot.updates import GITHUB_RELEASES_URL, GitHubReleaseUpdater, UpdateManager
 
@@ -179,7 +181,9 @@ class FShotApplication(QObject):
         self.theme_manager = ThemeManager(self.app)
         self.language_manager = LanguageManager()
         self.capture = CaptureService()
+        self.virtual_capture = VirtualCaptureSession()
         self.window = EditorWindow(self.theme_manager, self.language_manager)
+        self.window.screen_mode_validator = self._ensure_virtual_screen
         self.hotkey_store = HotkeyStore()
         self.hotkeys = self.hotkey_store.load()
         self.bridge = HotkeyBridge()
@@ -226,7 +230,25 @@ class FShotApplication(QObject):
         self.app.quit()
 
     def capture_mode(self, mode: CaptureMode) -> None:
+        if self._capture_in_progress:
+            return
         settings = self.window.capture_settings
+        if settings.virtual_screen and sys.platform == "win32":
+            target = self.virtual_capture.active_target() if mode == CaptureMode.ACTIVE_WINDOW else None
+            frozen = None
+
+            def prepare_virtual_selection():
+                nonlocal frozen
+                if mode == CaptureMode.WINDOW_UNDER_CURSOR:
+                    frozen = self.capture.prepare_frozen_selection(mode, CaptureSettings())
+
+            self._start_capture(
+                lambda: self.virtual_capture.capture(
+                    self.capture, mode, settings, self.language_manager.text, target, frozen,
+                ),
+                before_event_flush=prepare_virtual_selection,
+            )
+            return
         frozen_selection = None
 
         def freeze_before_hotkey_returns() -> None:
@@ -239,7 +261,47 @@ class FShotApplication(QObject):
         )
 
     def repeat_capture(self) -> None:
+        if self.window.capture_settings.virtual_screen and sys.platform == "win32":
+            self._start_capture(lambda: self.virtual_capture.repeat(
+                self.capture, self.window.capture_settings, self.language_manager.text,
+            ))
+            return
         self._start_capture(lambda: self.capture.repeat(self.window.capture_settings))
+
+    def _ensure_virtual_screen(self) -> bool:
+        from fshot.virtual_screen import displays
+        from fshot.virtual_display_setup import installed_driver, install_driver, create_4k_display
+
+        if self._capture_in_progress:
+            return False
+        self._capture_in_progress = True
+        try:
+            if any(display.is_virtual for display in displays()):
+                return True
+            if not installed_driver():
+                answer = QMessageBox.question(
+                    self.window, "FShot", self.language_manager.text("virtual_install_question"),
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if answer != QMessageBox.StandardButton.Yes:
+                    return False
+                install_driver(self.window, self.language_manager.text)
+            else:
+                answer = QMessageBox.question(
+                    self.window, "FShot", self.language_manager.text("virtual_create_question"),
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if answer != QMessageBox.StandardButton.Yes:
+                    return False
+            create_4k_display(self.window, self.language_manager.text)
+            return True
+        except Exception as exc:
+            self._show_capture_error(exc)
+            return False
+        finally:
+            self._capture_in_progress = False
 
     def _start_capture(self, capture, before_event_flush=None) -> None:
         if self._capture_in_progress:
@@ -251,11 +313,7 @@ class FShotApplication(QObject):
                 before_event_flush()
             except Exception as exc:  # pragma: no cover - UI guard
                 traceback.print_exc()
-                QMessageBox.warning(
-                    self.window,
-                    "FShot",
-                    self.language_manager.text("capture_failed", error=exc),
-                )
+                self._show_capture_error(exc)
                 self._capture_in_progress = False
                 return
         QApplication.processEvents()
@@ -265,11 +323,7 @@ class FShotApplication(QObject):
                 image = capture()
             except Exception as exc:  # pragma: no cover - UI guard
                 traceback.print_exc()
-                QMessageBox.warning(
-                    self.window,
-                    "FShot",
-                    self.language_manager.text("capture_failed", error=exc),
-                )
+                self._show_capture_error(exc)
                 self._capture_in_progress = False
                 return
             if image is None:
@@ -285,6 +339,36 @@ class FShotApplication(QObject):
             self._capture_in_progress = False
 
         QTimer.singleShot(120, do_capture)
+
+    def _show_capture_error(self, error: Exception) -> None:
+        dialog = QMessageBox(
+            QMessageBox.Icon.Warning, "FShot",
+            self.language_manager.text("capture_failed", error=error),
+            QMessageBox.StandardButton.Ok, self.window,
+        )
+        dialog.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
+        screen = QGuiApplication.screenAt(QCursor.pos()) or QGuiApplication.primaryScreen()
+        if screen is not None:
+            dialog.winId()
+            dialog.windowHandle().setScreen(screen)
+            dialog.adjustSize()
+            dialog.move(screen.availableGeometry().center() - dialog.rect().center())
+
+        def bring_to_front() -> None:
+            _activate_window(dialog)
+            if sys.platform == "win32":
+                try:
+                    # Keep the warning above other apps even if Windows rejects
+                    # foreground activation while the editor is hidden.
+                    win32gui.SetWindowPos(
+                        int(dialog.winId()), win32con.HWND_TOPMOST, 0, 0, 0, 0,
+                        win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW,
+                    )
+                except Exception:
+                    pass
+
+        QTimer.singleShot(0, bring_to_front)
+        dialog.exec()
 
     def _build_tray(self) -> QSystemTrayIcon:
         tray = QSystemTrayIcon(tray_icon(macos=sys.platform == "darwin"), self.app)
@@ -614,6 +698,13 @@ def main() -> int:
 
         print(f"FShot {__version__}")
         return 0
+    if sys.stderr is not None:
+        import faulthandler
+
+        try:
+            faulthandler.enable(file=sys.stderr, all_threads=True)
+        except (OSError, RuntimeError):
+            pass
     app = QApplication(sys.argv)
     controller = FShotApplication(app)
     return controller.run()

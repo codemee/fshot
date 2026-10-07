@@ -32,6 +32,7 @@ class LineEndStyle(str, Enum):
 class CaptureSettings:
     include_cursor: bool = False
     delay_seconds: float = 0
+    virtual_screen: bool = False
 
 
 @dataclass

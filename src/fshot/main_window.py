@@ -253,6 +253,7 @@ class EditorWindow(QMainWindow):
         self.setAcceptDrops(True)
         self.settings = DrawingSettings.default()
         self.capture_settings = CaptureSettings()
+        self.screen_mode_validator: Callable[[], bool] | None = None
         self.hotkey_bindings = default_hotkeys()
         self._hotkey_validator: Callable | None = None
         self._hotkey_applier: Callable | None = None
@@ -627,6 +628,16 @@ class EditorWindow(QMainWindow):
         self.delay_action = QAction(self._delay_icon(), "Delay", self)
         self.delay_action.triggered.connect(self._show_delay_panel)
         toolbar.addAction(self.delay_action)
+
+        self.screen_mode_action = QAction(self)
+        self.screen_mode_action.setCheckable(True)
+        self.screen_mode_action.setEnabled(sys.platform == "win32")
+        self.screen_mode_action.triggered.connect(self._request_screen_mode)
+        toolbar.addAction(self.screen_mode_action)
+        self.screen_mode_action.setChecked(
+            sys.platform == "win32" and self.app_settings.value("capture/virtual_screen", False, type=bool)
+        )
+        self._set_screen_mode(self.screen_mode_action.isChecked())
 
         toolbar.addSeparator()
         self.hotkey_action = QAction(tool_icon("keyboard"), "Capture shortcuts", self)
@@ -1098,6 +1109,24 @@ class EditorWindow(QMainWindow):
         if popup is not None:
             popup.close()
 
+    def _request_screen_mode(self, checked: bool) -> None:
+        self.screen_mode_action.setEnabled(False)
+        try:
+            if checked and self.screen_mode_validator is not None:
+                checked = self.screen_mode_validator()
+            self.screen_mode_action.setChecked(checked)
+            self._set_screen_mode(checked)
+        finally:
+            self.screen_mode_action.setEnabled(sys.platform == "win32")
+
+    def _set_screen_mode(self, checked: bool) -> None:
+        self.capture_settings.virtual_screen = checked
+        self.app_settings.setValue("capture/virtual_screen", checked)
+        label = self._tr("capture_screen_virtual" if checked else "capture_screen_physical")
+        self.screen_mode_action.setText(label)
+        self.screen_mode_action.setToolTip(label + "\n" + self._tr("capture_screen_help"))
+        self.screen_mode_action.setIcon(tool_icon("screen_mode", checked=checked, dark=self._is_dark_theme()))
+
     def _set_include_cursor(self, checked: bool) -> None:
         self.capture_settings.include_cursor = checked
         self.cursor_action.setIcon(tool_icon("cursor", checked=checked, dark=self._is_dark_theme()))
@@ -1499,6 +1528,7 @@ class EditorWindow(QMainWindow):
         self.tab_menu_button.setToolTip(self._tr("open_tabs"))
         self.cursor_action.setText(self._tr("include_cursor"))
         self._set_include_cursor(self.capture_settings.include_cursor)
+        self._set_screen_mode(self.capture_settings.virtual_screen)
         self._set_delay(self.capture_settings.delay_seconds, None)
         mode = self.theme_manager.mode.value
         effective = self.theme_manager.effective_mode.value
@@ -1547,6 +1577,7 @@ class EditorWindow(QMainWindow):
         self.style_action.setIcon(self._style_icon())
         self.cursor_action.setIcon(tool_icon("cursor", checked=self.capture_settings.include_cursor, dark=dark))
         self.delay_action.setIcon(self._delay_icon())
+        self.screen_mode_action.setIcon(tool_icon("screen_mode", checked=self.capture_settings.virtual_screen, dark=dark))
         self.theme_action.setIcon(self._theme_icon())
         self.language_action.setIcon(
             tool_icon("language", badge=self.language_manager.mode.value, dark=dark)

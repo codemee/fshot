@@ -84,7 +84,15 @@ def tool_icon(
     painter.setPen(pen)
     painter.setBrush(Qt.BrushStyle.NoBrush)
 
-    if name == "pen":
+    if name == "screen_mode":
+        if checked:
+            pen.setStyle(Qt.PenStyle.DashLine)
+            pen.setDashPattern([2, 2])
+            painter.setPen(pen)
+        painter.drawRoundedRect(QRect(5, 5, 22, 16), 2, 2)
+        painter.drawLine(16, 21, 16, 26)
+        painter.drawLine(10, 26, 22, 26)
+    elif name == "pen":
         # The pencil artwork extends farther toward the lower-left than the
         # other toolbar glyphs, so align its visual center with its peers.
         painter.save()
