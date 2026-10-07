@@ -688,7 +688,7 @@ class CaptureService:
 
     def _rect_for_mode(self, mode: CaptureMode) -> CaptureRect | None:
         if mode == CaptureMode.FULLSCREEN:
-            return self._fullscreen_rect()
+            return self._current_screen_rect() if sys.platform == "win32" else self._fullscreen_rect()
         if mode == CaptureMode.ACTIVE_WINDOW:
             return self._active_window_rect() or self._fullscreen_rect()
         return None
@@ -696,6 +696,23 @@ class CaptureService:
     def _fullscreen_rect(self) -> CaptureRect:
         with mss.mss() as sct:
             monitor = sct.monitors[0]
+            return CaptureRect(monitor["left"], monitor["top"], monitor["width"], monitor["height"])
+
+    def _current_screen_rect(self) -> CaptureRect:
+        """Capture just the monitor containing the cursor, in native coordinates."""
+        if sys.platform == "win32" and win32api is not None:
+            point = QPoint(*win32api.GetCursorPos())
+        else:
+            point = QCursor.pos()
+        with mss.mss() as sct:
+            monitors = sct.monitors[1:]
+            for monitor in monitors:
+                rect = CaptureRect(monitor["left"], monitor["top"], monitor["width"], monitor["height"])
+                if _rect_contains(rect, point):
+                    return rect
+            if not monitors:
+                raise RuntimeError("No active displays found.")
+            monitor = monitors[0]
             return CaptureRect(monitor["left"], monitor["top"], monitor["width"], monitor["height"])
 
     def _select_region(self, frozen_desktop: Image.Image | None = None) -> CaptureRect | None:

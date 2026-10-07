@@ -118,11 +118,20 @@ def window_capture_rect(hwnd: int | None, display: Display) -> CaptureRect:
     return rect
 
 
-def _wait_for_window_update(seconds: float = 0.15) -> None:
-    """Let DPI/resize messages and DWM composition settle before reading bounds."""
-    deadline = time.monotonic() + seconds
+def _wait_for_window_update(seconds: float = 0.15, hwnd: int | None = None) -> None:
+    """Stop early when native bounds stabilize; retain the upper wait limit."""
+    started = time.monotonic()
+    deadline = started + seconds
+    previous = None
+    stable_samples = 0
     while time.monotonic() < deadline:
         QApplication.processEvents()
+        if hwnd is not None:
+            current = _window_rect(hwnd)
+            stable_samples = stable_samples + 1 if current is not None and current == previous else 0
+            previous = current
+            if stable_samples >= 3 and time.monotonic()-started >= 0.04:
+                return
         time.sleep(0.01)
 
 
@@ -141,7 +150,9 @@ def _place_window(hwnd: int, target: CaptureRect) -> None:
             target.width + (right-left-frame.width), target.height + (bottom-top-frame.height),
             win32con.SWP_NOACTIVATE | win32con.SWP_SHOWWINDOW,
         )
-        _wait_for_window_update()
+        _wait_for_window_update(hwnd=hwnd)
+        if _window_rect(hwnd) == target:
+            break
 
 
 def proportional_size(original: CaptureRect, source: CaptureRect, destination: CaptureRect) -> tuple[int, int]:
@@ -173,6 +184,11 @@ class VirtualCaptureSession:
         return _window_target_from_hwnd(win32gui.GetForegroundWindow())
 
     def capture(self, service, mode, settings, tr, target=None, frozen=None):
+        if mode == CaptureMode.FULLSCREEN:
+            image = service._capture_rect_for_mode(mode, service._current_screen_rect(), settings)
+            if image is not None:
+                self.last = (mode, None)
+            return image
         if mode == CaptureMode.REGION:
             raise RuntimeError(tr("virtual_region_unsupported"))
         display = automatic_display(tr)
@@ -194,11 +210,14 @@ class VirtualCaptureSession:
         if self.last is None:
             return None
         _mode, target = self.last
+        if _mode == CaptureMode.FULLSCREEN:
+            return self.capture(service, _mode, settings, tr)
         if target is not None and target.resolve() is None:
             return None
         return self._capture_target(service, automatic_display(tr), target, settings, tr)
 
     def _capture_target(self, service, display, target, settings, tr):
+        started = time.perf_counter()
         hwnd = target.owner_hwnd if target is not None else None
         logging.getLogger(__name__).warning(
             "Virtual capture selection: owner=%s source=%s whole_window=%s original=%s destination=%s",
@@ -211,9 +230,12 @@ class VirtualCaptureSession:
         if target is not None and target.resolve() is None:
             raise RuntimeError(tr("virtual_control_unavailable"))
         with moved_window(hwnd, display) as destination:
+            logging.getLogger(__name__).warning("Virtual capture move ready: %.3fs", time.perf_counter()-started)
             QApplication.processEvents()
-            # Give applications time to redraw at the destination resolution.
-            time.sleep(0.3)
+            # Keep the redraw buffer for moved applications; desktop-only
+            # captures have no DPI/resize work to wait for.
+            if hwnd is not None:
+                _wait_for_window_update(0.3)
             if settings.delay_seconds > 0 and service._countdown(settings.delay_seconds):
                 return None
             if hwnd is not None:
@@ -224,16 +246,14 @@ class VirtualCaptureSession:
                     _place_window(hwnd, destination)
             owner_rect = window_capture_rect(hwnd, display)
             rect = owner_rect
-            if target is not None and target.resolve() is None:
-                raise RuntimeError(tr("virtual_control_unavailable"))
-            if target is not None and not target.is_window:
-                rect = target.resolve()
-                if rect is not None:
-                    # UIA bounds can extend into the invisible resize border.
-                    # Capture the visible part within the owning window.
-                    rect = rect.intersect(owner_rect)
-                if rect is None:
+            if target is not None:
+                live_rect = target.resolve()
+                if live_rect is None:
                     raise RuntimeError(tr("virtual_control_unavailable"))
+                if not target.is_window:
+                    rect = live_rect.intersect(owner_rect)
+                    if rect is None:
+                        raise RuntimeError(tr("virtual_control_unavailable"))
             if hwnd is not None:
                 import win32gui
                 import win32con
@@ -246,6 +266,7 @@ class VirtualCaptureSession:
                 "Virtual capture output: owner=%s owner_rect=%s capture_rect=%s", hwnd, owner_rect, rect,
             )
             image = service._grab_rect(rect)
+            logging.getLogger(__name__).warning("Virtual capture image ready: %.3fs (configured delay=%s)", time.perf_counter()-started, settings.delay_seconds)
             if settings.include_cursor:
                 service._draw_cursor(image, rect)
             return image
@@ -277,8 +298,9 @@ def moved_window(hwnd: int | None, display: Display):
     if width > target.width or height > target.height:
         raise RuntimeError("The proportional window size exceeds the destination work area. Resize the source window first.")
     try:
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-        _wait_for_window_update()
+        if placement[1] != win32con.SW_SHOWNORMAL:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            _wait_for_window_update(hwnd=hwnd)
         destination = CaptureRect(target.left, target.top, width, height)
         _place_window(hwnd, destination)
         window_capture_rect(hwnd, display)
@@ -287,7 +309,7 @@ def moved_window(hwnd: int | None, display: Display):
         if win32gui.IsWindow(hwnd):
             win32gui.SetWindowPlacement(hwnd, placement)
             if placement[1] == win32con.SW_SHOWNORMAL:
-                _wait_for_window_update()
+                _wait_for_window_update(hwnd=hwnd)
                 left, top, right, bottom = original_outer
                 win32gui.SetWindowPos(
                     hwnd, 0, left, top, right-left, bottom-top,
