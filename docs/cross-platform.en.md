@@ -14,7 +14,7 @@ Image drag/drop and paste use Qt `QMimeData`, `QUrl`, and clipboard APIs. On mac
 
 - Global shortcuts use `RegisterHotKey` and consume `WM_HOTKEY`.
 - The toolbar keyboard icon configures the four capture shortcuts and the repeat action; Windows probes `RegisterHotKey` conflicts before applying them.
-- Repeat Previous Capture defaults to `Ctrl+Shift+Q`, is configurable, and preserves the previous region or selected window/control target.
+- Repeat Previous Capture defaults to <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>, is configurable, and preserves the previous region or selected window/control target.
 - Full-screen/region capture uses `mss` with Pillow `ImageGrab` fallback.
 - Region and window/control selection freeze the virtual desktop before showing the selector, preserving transient menus that disappear on focus loss.
 - Focused windows and selected top-level windows use DWM extended frame bounds to exclude invisible resize frames; controls inside a window retain their UI Automation bounds.
@@ -27,8 +27,8 @@ Virtual capture and its driver provisioning/input proxy are currently Windows-on
 
 ### macOS
 
-- Quartz event taps consume `Ctrl+Shift+A/R/F/W`.
-- The shortcut listener supports user-configured Ctrl/Shift/Option plus A–Z combinations, persisted with `QSettings`.
+- Quartz event taps consume <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd>.
+- The shortcut listener supports user-configured <kbd>Ctrl</kbd>/<kbd>Shift</kbd>/<kbd>Option</kbd> plus <kbd>A</kbd>–<kbd>Z</kbd> combinations, persisted with `QSettings`.
 - Screen Recording permission is checked/requested.
 - Accessibility `AXFocusedWindow` is preferred; Core Graphics window fallback avoids transient browser popups.
 - Accessibility hit testing finds the smallest valid element under the pointer and clamps results to the owning window.
@@ -73,18 +73,18 @@ Linux is not currently a primary target. X11 and Wayland differ substantially in
 
 - Shortcuts trigger capture and are not forwarded to the focused application.
 - The shortcut panel opens with the active values; **Use defaults** changes only the pending panel values, OK applies and persists them, and Cancel leaves the active settings unchanged.
-- On macOS, custom Ctrl/Shift/Option plus letter combinations trigger the intended capture mode and remain configured after restart.
+- On macOS, custom <kbd>Ctrl</kbd>/<kbd>Shift</kbd>/<kbd>Option</kbd> plus letter combinations trigger the intended capture mode and remain configured after restart.
 - Immediate and delayed capture behave consistently: Windows region and window/control selection freeze the desktop after the countdown, while other modes resolve the target before counting down and capturing the live image.
 - Full-screen, region, focused-window, and selected window/control capture work.
 - After a successful capture, the FShot editor is restored and requests foreground activation. If the foreground lock or an unfinished drag-and-drop operation rejects `SetForegroundWindow`, the error is treated as a best-effort activation failure and cannot abort capture; a brief topmost/not-topmost Z-order raise remains the fallback. FShot checks and reasserts the editor foreground state 200ms after capture completes.
 - Browser transient URLs/tooltips are not mistaken for the focused window.
-- Escape cancels delayed countdowns and region/window selection.
+- <kbd>Escape</kbd> cancels delayed countdowns and region/window selection.
 - Include Cursor captures the current real pointer.
 - New captures appear at the editor's top-left.
 - Clipboard content pastes into common applications.
 - PNG/JPG save works.
 - Dropped images open under their original name, start clean, and save edits back to the source.
-- Saved tabs rename their source file inline with Windows/Linux `F2`, macOS `Return`, or a double-click; existing files are not overwritten and the extension is preserved.
+- Saved tabs rename their source file inline with Windows/Linux <kbd>F2</kbd>, macOS <kbd>Return</kbd>, or a double-click; existing files are not overwritten and the extension is preserved.
 - Pasted images and pasted file-manager images create new timestamp-named tabs.
 - A 90° clockwise rotation swaps image dimensions; horizontal/vertical flips reflect content along the selected axis; proportional downscaling accepts only 1–99%. Each operation is undoable, and save/copy uses the transformed image.
 - Pixel measurement shows live horizontal and vertical deltas while dragging, remains based on source-image pixels at every zoom level, and does not modify exported images.

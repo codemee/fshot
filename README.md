@@ -60,72 +60,176 @@ uv run fshot
 ```
 
 程式啟動後會隱藏主視窗並留在系統匣。雙擊系統匣圖示可顯示編輯視窗，右鍵選單可退出。
-工具列的主題按鈕可單擊循環切換「跟隨系統 → 淺色 → 深色」；預設跟隨作業系統配色，選擇會保留至下次啟動。太陽代表淺色、月亮代表深色，分隔排列的太陽與月亮代表跟隨系統。
-語言按鈕可單擊循環切換「跟隨系統 → 繁體中文 → English」，並保留使用者選擇；圖示分別為 `文/A`、`中` 與 `En`。
-工具列按鈕的提示文字會依目前語言顯示，具備快捷鍵的動作也會在提示中列出對應按鍵。
-畫線與箭頭共用同一個畫線工具，預設以實心圓起始、箭頭結束。畫線按鈕旁的下拉面板可分別將線條起點與終點設為無箭頭、箭頭或實心圓，兩端樣式可任意組合。
-丈量像素工具以拖曳矩形的方式操作，會即時顯示起點到目前位置的橫向與縱向像素差；放開後保留讀值，重新丈量或切換工具時清除。丈量結果只顯示在編輯器上，不會寫入圖片或產生復原紀錄。
-前方編輯工具區也可將目前圖片順時針旋轉 90°、水平鏡射或垂直鏡射；縮小按鈕會展開與線條樣式一致的面板，可輸入 1–99% 的比例實際縮小圖片尺寸。這些操作都會標記文件已修改，並可使用復原還原。
-工具列的鍵盤圖示可設定四種截圖方式及「重複前一次擷取」的全域快捷鍵。每組可選 Ctrl、Shift、Alt 與 A–Z 字母；Shift 必須搭配 Ctrl 或 Alt。「使用預設」會將面板中的五組欄位恢復為預設值；按 OK 且系統註冊成功後才會套用並保留設定，Cancel 不會變更目前快捷鍵。
 
-圖片也可透過拖放或剪貼簿加入編輯器：拖放圖片會以完整檔名建立頁籤、保留來源路徑並在修改後寫回原檔；直接貼上影像或從檔案管理器複製圖片後貼上，會以截圖時間格式建立新的未存檔頁籤。成功存檔後會記住檔案所在資料夾，其他尚未存檔的頁籤會從該資料夾開啟儲存交談窗。Windows/Linux 使用 `Ctrl+V`，macOS 使用 `Command+V`。
+### 工具列圖示與功能
+
+下表依工具列由左至右排列，圖示直接由程式的工具列繪圖匯出，使用淺色主題示意。將滑鼠停在按鈕上可查看目前語言的提示與快捷鍵；線條樣式、顏色、延遲及模式圖示會隨設定改變。下列快捷鍵以 Windows 為例。
+
+| 圖示 | 功能 | 操作方式／快捷鍵 |
+| --- | --- | --- |
+| <img src="docs/images/toolbar/pen.png" width="28" height="28" alt="自由畫筆"> | 自由畫筆 | 在圖片上拖曳繪製自由線條。<kbd>Alt</kbd>+<kbd>P</kbd> |
+| <img src="docs/images/toolbar/line.png" width="28" height="28" alt="線條"> | 線條／箭頭 | 拖曳繪製直線，預設以實心圓起始、箭頭結束。<kbd>Alt</kbd>+<kbd>L</kbd> |
+| <img src="docs/images/toolbar/line_dropdown.png" width="28" height="28" alt="線條樣式下拉"> | 線條端點樣式 | 點擊線條按鈕右側的小箭頭，分別設定起點與終點為無、箭頭或實心圓。 |
+| <img src="docs/images/toolbar/rectangle.png" width="28" height="28" alt="矩形"> | 矩形 | 拖曳繪製矩形框。<kbd>Alt</kbd>+<kbd>R</kbd> |
+| <img src="docs/images/toolbar/measure.png" width="28" height="28" alt="丈量像素"> | 丈量像素 | 拖曳顯示橫向、縱向像素差；放開保留讀值，重新丈量或切換工具時清除。讀值不寫入圖片。<kbd>Alt</kbd>+<kbd>D</kbd> |
+| <img src="docs/images/toolbar/text.png" width="28" height="28" alt="文字"> | 文字 | 在圖片上加入文字。<kbd>Alt</kbd>+<kbd>T</kbd> |
+| <img src="docs/images/toolbar/mosaic.png" width="28" height="28" alt="馬賽克"> | 馬賽克 | 拖曳選取範圍，以馬賽克遮蔽內容。<kbd>Alt</kbd>+<kbd>M</kbd> |
+| <img src="docs/images/toolbar/rotate_clockwise.png" width="28" height="28" alt="順時針旋轉"> | 順時針旋轉 | 將圖片順時針旋轉 90°。<kbd>Alt</kbd>+<kbd>C</kbd> |
+| <img src="docs/images/toolbar/flip_horizontal.png" width="28" height="28" alt="水平鏡射"> | 水平鏡射 | 將圖片左右翻轉。<kbd>Alt</kbd>+<kbd>H</kbd> |
+| <img src="docs/images/toolbar/flip_vertical.png" width="28" height="28" alt="垂直鏡射"> | 垂直鏡射 | 將圖片上下翻轉。<kbd>Alt</kbd>+<kbd>V</kbd> |
+| <img src="docs/images/toolbar/resize_down.png" width="28" height="28" alt="縮小圖片"> | 縮小圖片 | 開啟面板輸入 1–99%，實際縮小圖片像素尺寸，可復原。<kbd>Alt</kbd>+<kbd>S</kbd> |
+| <img src="docs/images/toolbar/style.png" width="28" height="28" alt="線寬與顏色"> | 線寬與顏色 | 開啟面板調整繪圖線寬及顏色，亦可選擇自訂顏色。 |
+| <img src="docs/images/toolbar/undo.png" width="28" height="28" alt="復原"> | 復原 | 還原前一次圖片編輯。<kbd>Ctrl</kbd>+<kbd>Z</kbd> |
+| <img src="docs/images/toolbar/copy.png" width="28" height="28" alt="複製"> | 複製圖片 | 將目前圖片複製至剪貼簿。<kbd>Ctrl</kbd>+<kbd>C</kbd> |
+| <img src="docs/images/toolbar/save.png" width="28" height="28" alt="存檔"> | 存檔 | 儲存目前圖片；已有來源路徑時寫回原檔，新圖片則選擇儲存位置。<kbd>Ctrl</kbd>+<kbd>S</kbd> |
+| <img src="docs/images/toolbar/save_as.png" width="28" height="28" alt="另存新檔"> | 另存新檔 | 選擇另一個檔名或位置儲存圖片。<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> |
+| <img src="docs/images/toolbar/zoom_in.png" width="28" height="28" alt="放大顯示"> | 放大顯示 | 放大編輯器中的圖片顯示，不改變圖片像素尺寸。<kbd>Ctrl</kbd>+<kbd>+</kbd>／<kbd>Ctrl</kbd>+<kbd>=</kbd> |
+| <img src="docs/images/toolbar/zoom_out.png" width="28" height="28" alt="縮小顯示"> | 縮小顯示 | 縮小編輯器中的圖片顯示，不改變圖片像素尺寸。<kbd>Ctrl</kbd>+<kbd>-</kbd> |
+| <img src="docs/images/toolbar/cursor_off.png" width="28" height="28" alt="不含游標"> <img src="docs/images/toolbar/cursor_on.png" width="28" height="28" alt="包含游標"> | 擷取時包含游標 | 單擊切換是否將游標加入截圖；有勾號表示啟用。 |
+| <img src="docs/images/toolbar/delay_off.png" width="28" height="28" alt="關閉延遲"> <img src="docs/images/toolbar/delay_5.png" width="28" height="28" alt="延遲五秒"> | 延遲擷取 | 開啟面板選擇關閉、1、3、5 秒或自訂 0–60 秒；圖示數字表示目前秒數。虛擬模式的作用中視窗設定延遲後會開啟操作預覽。 |
+| <img src="docs/images/toolbar/screen_physical.png" width="28" height="28" alt="實體螢幕"> <img src="docs/images/toolbar/screen_virtual.png" width="28" height="28" alt="虛擬螢幕"> | 實體／虛擬螢幕 | 單擊切換，實線表示實體、虛線表示虛擬，設定會保留。虛擬模式僅支援 Windows，缺少螢幕或驅動時會詢問是否建立／安裝。詳見下方虛擬擷取說明。 |
+| <img src="docs/images/toolbar/keyboard.png" width="28" height="28" alt="擷取快捷鍵"> | 設定擷取快捷鍵 | 設定四種擷取模式及重複擷取的 <kbd>Ctrl</kbd>／<kbd>Shift</kbd>／<kbd>Alt</kbd> 加 <kbd>A</kbd>–<kbd>Z</kbd> 組合；<kbd>Shift</kbd> 須搭配 <kbd>Ctrl</kbd> 或 <kbd>Alt</kbd>。按 OK 且註冊成功後套用，Cancel 不變更；「使用預設」重設面板欄位。 |
+| <img src="docs/images/toolbar/theme_system.png" width="28" height="28" alt="跟隨系統主題"> <img src="docs/images/toolbar/theme_light.png" width="28" height="28" alt="淺色主題"> <img src="docs/images/toolbar/theme_dark.png" width="28" height="28" alt="深色主題"> | 主題 | 單擊循環切換「跟隨系統 → 淺色 → 深色」，並保留選擇；太陽與月亮組合表示跟隨系統。 |
+| <img src="docs/images/toolbar/language_system.png" width="28" height="28" alt="跟隨系統語言"> <img src="docs/images/toolbar/language_zh_TW.png" width="28" height="28" alt="繁體中文"> <img src="docs/images/toolbar/language_en.png" width="28" height="28" alt="英文"> | 語言 | 單擊循環切換「跟隨系統 → 繁體中文 → English」，並保留選擇；圖示依序為文/A、中、En。 |
+
+macOS 的復原、複製與存檔使用 <kbd>⌘</kbd> 組合鍵；顯示縮放沿用表列 <kbd>Ctrl</kbd> 組合。貼上、重設縮放、頁籤重新命名及拖曳裁切沒有工具列按鈕，請參閱下方編輯快捷鍵與圖片操作說明。文件圖示需要更新時，可執行 `uv run python scripts/export_toolbar_icons.py` 重新匯出。
+
+圖片也可透過拖放或剪貼簿加入編輯器：拖放圖片會以完整檔名建立頁籤、保留來源路徑並在修改後寫回原檔；直接貼上影像或從檔案管理器複製圖片後貼上，會以截圖時間格式建立新的未存檔頁籤。成功存檔後會記住檔案所在資料夾，其他尚未存檔的頁籤會從該資料夾開啟儲存交談窗。Windows/Linux 使用 <kbd>Ctrl</kbd>+<kbd>V</kbd>，macOS 使用 <kbd>⌘</kbd>+<kbd>V</kbd>。
 
 ## 虛擬 4K 螢幕擷取（Windows 實驗功能）
 
 工具列的螢幕按鈕可切換「實體／虛擬」，實線螢幕圖示表示實體、虛線表示虛擬，選擇會保留至下次啟動。實體模式沿用原擷取流程；虛擬模式使用相同的快捷鍵，延遲作用中視窗擷取另提供下述操作預覽：
 
-- `Ctrl+Shift+A`：記住按鍵當下的作用中視窗，依螢幕佔比移動及調整至虛擬螢幕，擷取後還原。
-- `Ctrl+Shift+W`：在原螢幕選取視窗／控制項，移動其所屬視窗後擷取。控制項以原生 HWND 或 UI Automation 重新取得當下邊界；目標消失或無法追蹤時顯示錯誤。
-- `Ctrl+Shift+F`：直接擷取游標所在螢幕的全螢幕畫面；實體／虛擬模式皆相同，不移動或縮放視窗。
-- `Ctrl+Shift+Q`：重複上一次成功的虛擬快捷鍵擷取；實體與虛擬模式各自記住前次擷取。
-- `Ctrl+Shift+R`：虛擬模式尚不支援，會提示切換為實體模式。
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>：記住按鍵當下的作用中視窗，依螢幕佔比移動及調整至虛擬螢幕，擷取後還原。
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd>：在原螢幕選取視窗／控制項，移動其所屬視窗後擷取。控制項以原生 HWND 或 UI Automation 重新取得當下邊界；目標消失或無法追蹤時顯示錯誤。
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>：直接擷取游標所在螢幕的全螢幕畫面；實體／虛擬模式皆相同，不移動或縮放視窗。
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>：重複上一次成功的虛擬快捷鍵擷取；實體與虛擬模式各自記住前次擷取。
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>：虛擬模式尚不支援，會提示切換為實體模式。
 
 虛擬視窗擷取會在移動後等待畫面重新繪製，並套用既有延遲與游標設定。擷取完成、取消或錯誤後還原原位置、尺寸與視窗狀態。功能表等失去焦點即消失的暫態內容仍可能無法在虛擬螢幕保留；凍結的原畫面僅用於選取，不會當作高解析度輸出。
 
 ### 作用中視窗的延遲操作預覽（Windows 實驗功能）
 
-在虛擬模式將工具列「延遲」設為大於 0（建議先用 5 或 10 秒），把游標留在實體螢幕，切換到目標程式並按 `Ctrl+Shift+A`。視窗移到虛擬螢幕後，實體螢幕會顯示不取得焦點的即時預覽；第一張畫面就緒後才開始倒數。
+此功能讓你在實體螢幕操作已移至虛擬螢幕的視窗，例如展開功能表，等倒數結束後再擷取高解析度畫面。僅在 **Windows、虛擬模式、作用中視窗擷取、延遲大於 0** 時啟用。
 
-倒數期間，滑鼠操作會轉送至虛擬螢幕，預覽以十字游標顯示位置；鍵盤仍操作目標程式。可以點擊、拖曳、捲動及展開功能表。`Esc` 取消並還原視窗與游標；期間若切換到其他程式、目標消失或輸入轉送失敗也會停止。管理員權限較高的程式可能不接受輸入轉送。
+#### 啟動步驟
 
-預覽由背景執行緒擷取，以每秒 30 張為更新目標，只保留最新畫面並依實體螢幕預覽尺寸縮小，減少滑鼠操作的等待。實際更新速度取決於系統與顯示驅動；最後輸出的截圖仍以虛擬螢幕原始像素擷取。
+1. 點擊工具列的螢幕按鈕，切換至虛擬模式（虛線螢幕圖示）。
+2. 點擊「延遲」，設定大於 0 的秒數，建議先用 **5 或 10 秒**。
+3. 將游標留在實體螢幕，切換到要擷取的程式。
+4. 按下 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>，FShot 會將作用中視窗移至虛擬螢幕，並在實體螢幕顯示操作預覽。
 
-倒數到期時先擷取視窗與其原生功能表／新開啟的所屬彈出視窗，再關閉預覽並還原；預覽本身不會進入輸出圖片。延遲為 0、選取子元件及全螢幕擷取仍使用原流程。自繪功能表或特殊彈出視窗的邊界辨識需手動驗收。
+**第一張預覽畫面就緒後才開始倒數。** 預覽不取得焦點，鍵盤仍操作目標程式。
 
-切換至虛擬模式時，FShot 會先檢查已啟用的虛擬螢幕；若已存在就直接使用。沒有螢幕時會檢查支援的 Virtual Display Driver 安裝／驅動檔：找不到時詢問是否安裝並建立 4K 螢幕，按「是」後透過 WinGet 下載官方套件、安裝，再接續建立 3840 × 2160 延伸螢幕；已有驅動時則只詢問是否建立螢幕。Windows UAC 由使用者手動確認；取消或失敗會維持實體模式，並提供手動安裝指引。
+#### 預覽期間操作
 
-自動安裝及建立目前支援 VirtualDrivers／MikeTheTech Virtual Display Driver，使用 Virtual Driver Control 隨附的已簽章安裝工具。建立前會備份 `C:\VirtualDisplayDriver\vdd_settings.xml`，加入 4K 模式並設定一個虛擬顯示器；重新安裝會保留原設定。其他虛擬驅動仍可使用已有的螢幕，但需自行建立。系統匣不再提供額外的虛擬螢幕擷取入口，統一使用工具列切換與原快捷鍵。
+| 操作 | 結果 |
+| --- | --- |
+| 移動滑鼠 | 操作轉送至虛擬螢幕，預覽以十字游標顯示位置。 |
+| 點擊、拖曳、捲動 | 操作目標程式，可在倒數期間展開功能表。 |
+| 使用鍵盤 | 輸入仍送至目標程式。 |
+| 按 <kbd>Esc</kbd> | 取消擷取，關閉預覽並還原視窗與游標。 |
+| 切換到其他程式、目標消失或輸入轉送失敗 | 停止擷取並還原。 |
 
-FShot 自動選擇像素面積最大的啟用中虛擬螢幕。視窗移動前先記錄原位置、長寬與狀態，寬、高分別按來源與目標螢幕尺寸的比例換算；擷取後依紀錄還原。視窗模式只輸出視窗範圍，全螢幕模式一律輸出游標所在的當前螢幕。
+#### 擷取與還原
 
-100% 顯示縮放能容納較多內容；200% 適合以更多像素呈現支援 DPI 的介面與文字。內容布局仍取決於目標程式的 DPI 支援及尺寸限制；FShot 不會修改系統的縮放或 DPI 設定。舊式程式或低解析度素材可能無法增加細節；最小化視窗請先還原，換算尺寸超出目標螢幕可用範圍時會中止擷取，請先縮小來源視窗。擷取、取消或錯誤後依原紀錄還原位置、長寬與最大化狀態。macOS 尚未提供此移動與預覽流程。
+倒數結束後，FShot 依序執行：
+
+1. 擷取目標視窗，以及其原生功能表／新開啟的所屬彈出視窗。
+2. 關閉操作預覽；預覽本身不會進入輸出圖片。
+3. 還原視窗原本的位置、長寬與狀態，並還原游標位置。
+
+#### 限制與效能
+
+- **適用範圍**：延遲為 0、選取子元件及全螢幕擷取仍使用原流程。
+- **程式相容性**：管理員權限較高的程式可能不接受輸入轉送；自繪功能表或特殊彈出視窗的邊界辨識需手動驗收。
+- **預覽流暢度**：背景更新以每秒 30 張為目標，只保留最新畫面，並依實體螢幕預覽尺寸縮小。實際速度取決於系統與顯示驅動。
+- **輸出畫質**：最後截圖仍以虛擬螢幕原始像素擷取，預覽縮小不影響輸出解析度。
+
+### 驅動程式與虛擬螢幕建立
+
+#### 切換時的檢查流程
+
+點擊工具列螢幕按鈕切換至虛擬模式後，FShot 依系統狀態處理：
+
+| 系統狀態 | FShot 的處理方式 | 使用者操作 |
+| --- | --- | --- |
+| 已有啟用的虛擬螢幕 | 直接使用像素面積最大的虛擬螢幕。 | 不需額外設定。 |
+| 已有支援的驅動，但沒有啟用的虛擬螢幕 | 詢問是否建立 3840 × 2160 延伸螢幕。 | 同意建立，並在出現 UAC 時確認。 |
+| 找不到支援的驅動 | 詢問是否安裝並建立 4K 螢幕；同意後以 WinGet 下載官方套件、安裝，再建立螢幕。 | 同意安裝與建立，並在出現 UAC 時確認。 |
+| 使用者取消或程序失敗 | 維持實體模式；失敗時提供手動安裝指引。 | 可依指引處理後再切換。 |
+
+#### 驅動與設定管理
+
+- **自動安裝支援**：VirtualDrivers／MikeTheTech Virtual Display Driver，使用 Virtual Driver Control 隨附的已簽章安裝工具。
+- **建立前備份**：備份 `C:\VirtualDisplayDriver\vdd_settings.xml`，再加入 4K 模式並設定一個虛擬顯示器。
+- **重新安裝**：保留原設定。
+- **其他虛擬驅動**：可使用已啟用的螢幕，但需自行建立。
+- **操作入口**：統一使用工具列切換與原快捷鍵，系統匣不提供額外的虛擬螢幕擷取入口。
+
+### 視窗大小與顯示縮放
+
+#### 視窗移動與尺寸換算
+
+1. 選擇像素面積最大的啟用中虛擬螢幕。
+2. 移動前記錄視窗原本的位置、長寬與狀態。
+3. 寬、高分別依來源與目標螢幕尺寸換算，維持原本的螢幕佔比：
+
+   `目標視窗寬 = 原視窗寬 ÷ 來源螢幕寬 × 目標螢幕寬`
+
+   `目標視窗高 = 原視窗高 ÷ 來源螢幕高 × 目標螢幕高`
+
+4. 擷取完成、取消或錯誤後，依紀錄還原位置、長寬與狀態，包含原本的最大化狀態。
+
+#### 擷取範圍
+
+| 擷取模式 | 輸出範圍 |
+| --- | --- |
+| 視窗擷取 | 目標視窗範圍；延遲操作預覽會一併包含可辨識的原生功能表／新開啟的所屬彈出視窗。 |
+| 全螢幕擷取 | 游標所在的當前螢幕，實體／虛擬模式皆相同。 |
+
+#### Windows 顯示縮放
+
+顯示縮放由使用者在 Windows 設定；FShot 不會修改系統縮放或 DPI。
+
+| 縮放比例 | 畫面特性 |
+| --- | --- |
+| 100% | 能容納較多內容。 |
+| 200% | 適合以更多像素呈現支援 DPI 的介面與文字。 |
+
+#### 使用限制
+
+- **最小化視窗**：請先還原再擷取。
+- **尺寸超出可用範圍**：換算後無法放入目標螢幕時會中止，請先縮小來源視窗。
+- **畫質與布局**：取決於目標程式的 DPI 支援及尺寸限制；舊式程式或低解析度素材可能無法增加細節。
+- **平台支援**：macOS 尚未提供此移動與預覽流程。
 
 ## Windows Shortcuts
 
-- `Ctrl+Shift+Q`: 重複前一次的截圖方式（矩形區域與選取的視窗／控制項會沿用前次目標，可在設定面板自訂）
-- `Ctrl+Shift+A`: 擷取目前焦點視窗
-- `Ctrl+Shift+R`: 擷取矩形區域
-- `Ctrl+Shift+F`: 擷取全螢幕
-- `Ctrl+Shift+W`: 選取視窗或控制項後擷取
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>: 重複前一次的截圖方式（矩形區域與選取的視窗／控制項會沿用前次目標，可在設定面板自訂）
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>: 擷取目前焦點視窗
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>: 擷取矩形區域
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>: 擷取全螢幕
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd>: 選取視窗或控制項後擷取
 
-macOS 使用相同的 `Ctrl+Shift` 字母組合。獨立 App 請授權 `FShot.app`；透過 `uv`／`uvx` 執行時，系統設定中的授權對象通常是啟動指令所在的 App，例如「終端機」、iTerm2 或 IDE。授權後請完全結束並重新開啟 FShot 或該宿主 App。
+macOS 使用相同的 <kbd>Ctrl</kbd>+<kbd>Shift</kbd> 字母組合。獨立 App 請授權 `FShot.app`；透過 `uv`／`uvx` 執行時，系統設定中的授權對象通常是啟動指令所在的 App，例如「終端機」、iTerm2 或 IDE。授權後請完全結束並重新開啟 FShot 或該宿主 App。
 
 編輯工具快捷鍵：
 
-- `Alt+P`: 自由畫筆
-- `Alt+L`: 線條
-- `Alt+R`: 矩形
-- `Alt+D`: 丈量像素
-- `Alt+T`: 文字
-- `Alt+M`: 馬賽克
-- `Alt+C`: 順時針旋轉 90°
-- `Alt+S`: 依比例縮小圖片
-- `Alt+H`: 水平鏡射
-- `Alt+V`: 垂直鏡射
-- `Ctrl++` / `Ctrl+=`: 放大
-- `Ctrl+-`: 縮小
-- `Ctrl+0`: 重設縮放
-- `F2`: 直接在目前標籤頁重新命名已存檔的檔案（macOS 使用 `Return`）
+- <kbd>Alt</kbd>+<kbd>P</kbd>: 自由畫筆
+- <kbd>Alt</kbd>+<kbd>L</kbd>: 線條
+- <kbd>Alt</kbd>+<kbd>R</kbd>: 矩形
+- <kbd>Alt</kbd>+<kbd>D</kbd>: 丈量像素
+- <kbd>Alt</kbd>+<kbd>T</kbd>: 文字
+- <kbd>Alt</kbd>+<kbd>M</kbd>: 馬賽克
+- <kbd>Alt</kbd>+<kbd>C</kbd>: 順時針旋轉 90°
+- <kbd>Alt</kbd>+<kbd>S</kbd>: 依比例縮小圖片
+- <kbd>Alt</kbd>+<kbd>H</kbd>: 水平鏡射
+- <kbd>Alt</kbd>+<kbd>V</kbd>: 垂直鏡射
+- <kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>Ctrl</kbd>+<kbd>=</kbd>: 放大
+- <kbd>Ctrl</kbd>+<kbd>-</kbd>: 縮小
+- <kbd>Ctrl</kbd>+<kbd>0</kbd>: 重設縮放
+- <kbd>F2</kbd>: 直接在目前標籤頁重新命名已存檔的檔案（macOS 使用 <kbd>Return</kbd>）
 
 已存檔的標籤頁也可直接雙擊名稱進入重新命名；副檔名會保留不變。
 

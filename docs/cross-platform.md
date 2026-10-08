@@ -18,7 +18,7 @@ Windows 是目前主要實作平台。
 已實作：
 
 - 全域快捷鍵：`RegisterHotKey` 接收 `WM_HOTKEY`，避免快捷鍵送到焦點視窗。
-- 預設使用 `Ctrl+Shift+Q` 重複前一次成功擷取（可自訂），並保留前次矩形或選取的視窗／控制項目標。
+- 預設使用 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd> 重複前一次成功擷取（可自訂），並保留前次矩形或選取的視窗／控制項目標。
 - 可由工具列鍵盤圖示設定四種截圖方式與重複擷取動作的快捷鍵；Windows 在套用前以 `RegisterHotKey` 探測是否被其他程式占用。
 - 全螢幕/矩形擷取：`mss`，失敗時 fallback 到 Pillow `ImageGrab`。
 - 矩形區域與視窗／控制項選取會先凍結虛擬桌面，再從凍結畫面裁切，以保留功能表等失去焦點即消失的暫態內容。
@@ -30,14 +30,14 @@ Windows 是目前主要實作平台。
 
 Windows 的虛擬擷取模式使用 Win32 螢幕列舉與視窗 placement，其他平台的工具列切換停用。不包含驅動程式；切換虛擬模式時檢查現有螢幕與受支援驅動，使用者同意後才啟動 UAC helper 建立一個 4K 延伸螢幕。取消或失敗應回到實體模式；缺少驅動時先詢問是否安裝與建立，同意後以 WinGet 安裝官方套件並接續建立；失敗時提供手動安裝指引。Windows 手動驗收需確認：Windows 全螢幕模式在實體／虛擬切換下都擷取游標所在螢幕，不搬移畫面；視窗模式的寬、高依來源螢幕佔比分別換算，包含來源與目的螢幕長寬比不同的案例；避開工作列；負座標與不同 DPI 下仍擷取正確位置；成功、取消及錯誤後依紀錄還原原位置、長寬與正常／最大化狀態；預覽期間拔除螢幕或修改解析度時能中止；比例換算後超出目的螢幕可用範圍的視窗顯示錯誤。
 
-Windows 延遲操作預覽的手動驗收另需確認：游標在實體螢幕時能啟動，點擊／拖曳／捲動與鍵盤仍操作原目標，展開原生功能表後倒數到期能包含其邊界；`Esc`、焦點切換及目標關閉後能解除滑鼠轉送並還原視窗與游標。比較預覽反應速度時，最終輸出仍需保留原始像素；預覽影像不得出現在截圖內。不同 DPI、管理員程式及自繪功能表需分別驗收。
+Windows 延遲操作預覽的手動驗收另需確認：游標在實體螢幕時能啟動，點擊／拖曳／捲動與鍵盤仍操作原目標，展開原生功能表後倒數到期能包含其邊界；<kbd>Esc</kbd>、焦點切換及目標關閉後能解除滑鼠轉送並還原視窗與游標。比較預覽反應速度時，最終輸出仍需保留原始像素；預覽影像不得出現在截圖內。不同 DPI、管理員程式及自繪功能表需分別驗收。
 
 ### macOS
 
 已實作：
 
-- Quartz event tap 全域快捷鍵，攔截並 consume `Ctrl+Shift+A/R/F/W`。
-- 快捷鍵 listener 支援使用者設定的 Ctrl／Shift／Option 與 A–Z 字母組合，設定以 `QSettings` 保留。
+- Quartz event tap 全域快捷鍵，攔截並 consume <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>、<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>、<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>、<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd>。
+- 快捷鍵 listener 支援使用者設定的 <kbd>Ctrl</kbd>／<kbd>Shift</kbd>／<kbd>Option</kbd> 與 <kbd>A</kbd>–<kbd>Z</kbd> 字母組合，設定以 `QSettings` 保留。
 - 透過 Screen Recording API 檢查並要求螢幕錄製權限。
 - 優先使用 Accessibility `AXFocusedWindow` 擷取焦點視窗；失敗時才從前景程序的 Core Graphics 視窗選擇最大正常視窗，避免 Chrome 連結網址等 transient popup 被誤判為焦點視窗。
 - 使用 Accessibility API hit-test 最小控制項，並將 bounds 限制在游標下視窗內；無效或未包含游標的結果會 fallback 至游標下視窗。
@@ -101,18 +101,18 @@ Linux 尚未作為主要目標。Wayland/X11 差異很大，尤其是全域快�
 
 - 快捷鍵可觸發，且不把按鍵送給焦點 app。
 - 快捷鍵設定面板會顯示目前值；「使用預設」只改變面板暫存值，OK 套用並保留，Cancel 不改變目前設定。
-- macOS 自訂 Ctrl／Shift／Option 與字母組合可觸發正確的截圖方式，重新啟動後設定仍保留。
+- macOS 自訂 <kbd>Ctrl</kbd>／<kbd>Shift</kbd>／<kbd>Option</kbd> 與字母組合可觸發正確的截圖方式，重新啟動後設定仍保留。
 - 無延遲和有延遲流程都符合：Windows 矩形區域與視窗／控制項選取於倒數後凍結桌面，其他模式則先決定目標再倒數擷取。
 - 全螢幕、矩形、焦點視窗、選取視窗/控制項都可用。
 - 擷取成功後 FShot 編輯器會恢復並要求成為 Windows 前景視窗；若一般 `SetForegroundWindow` 被前景鎖定或尚未結束的拖放操作拒絕，錯誤會被視為 best-effort 失敗，並以短暫 topmost／not-topmost 的 Z-order 提升作為 fallback，不中斷截圖流程。擷取完成 200ms 後會再確認一次編輯器位於前景。
 - Chrome 等具有 transient popup 的應用程式，焦點視窗擷取不會誤截連結網址或 tooltip。
-- ESC 可取消延遲倒數及矩形／視窗選取。
+- <kbd>Esc</kbd> 可取消延遲倒數及矩形／視窗選取。
 - 包含游標時顯示當下真實游標。
 - 截圖後影像出現在編輯區左上角。
 - 複製到剪貼簿可貼到常見 app。
 - 存檔 PNG/JPG 正常。
 - 拖放圖片以原始檔名開啟、初始不標為 dirty，編輯並儲存後可寫回來源檔。
-- 已存檔頁籤可用 Windows/Linux `F2`、macOS `Return` 或雙擊標籤名稱直接重新命名原始檔案；不覆寫同名檔案且保留副檔名。
+- 已存檔頁籤可用 Windows/Linux <kbd>F2</kbd>、macOS <kbd>Return</kbd> 或雙擊標籤名稱直接重新命名原始檔案；不覆寫同名檔案且保留副檔名。
 - 直接貼上影像與從檔案管理器複製圖片後貼上，會建立使用截圖命名規範的新頁籤。
 - 像素丈量拖曳時會即時顯示水平與垂直差值，縮放後讀值仍以原圖像素計算，且不會修改輸出影像。
 - 順時針旋轉 90° 會交換圖片寬高；水平／垂直鏡射會沿指定軸翻轉內容；依比例縮小只接受 1–99%。所有修改皆可復原，儲存／複製使用變更後的實際圖片。

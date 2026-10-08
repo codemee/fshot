@@ -62,19 +62,19 @@ uv run fshot
 FShot starts with its editor hidden and remains in the system tray. Double-click the tray icon to show the editor; use the tray context menu to exit.
 
 The theme button cycles through Follow System, Light, and Dark. The language button cycles through Follow System, Traditional Chinese, and English. Both choices are persisted. Toolbar tooltips follow the selected language and include shortcuts where available.
-The keyboard icon opens the global shortcut settings for all four capture modes plus Repeat Previous Capture. Each shortcut can use Ctrl, Shift, Option/Alt, and an A–Z letter; Shift must be combined with Ctrl or Option/Alt. **Use defaults** restores the five default combinations in the panel. Changes are persisted only after OK successfully registers every shortcut; Cancel keeps the active settings unchanged.
+The keyboard icon opens the global shortcut settings for all four capture modes plus Repeat Previous Capture. Each shortcut can use <kbd>Ctrl</kbd>, <kbd>Shift</kbd>, <kbd>Option</kbd>/<kbd>Alt</kbd>, and an <kbd>A</kbd>–<kbd>Z</kbd> letter; <kbd>Shift</kbd> must be combined with <kbd>Ctrl</kbd> or <kbd>Option</kbd>/<kbd>Alt</kbd>. **Use defaults** restores the five default combinations in the panel. Changes are persisted only after OK successfully registers every shortcut; Cancel keeps the active settings unchanged.
 
-Images can also be added by drag-and-drop or clipboard paste. A dropped image opens under its full file name, retains its source path, and is saved back after editing. Pasted images create new unsaved tabs using the screenshot timestamp naming format. After a successful save, FShot remembers the containing directory and uses it when opening the Save dialog for other unsaved tabs. Paste uses `Ctrl+V` on Windows/Linux and `Command+V` on macOS.
+Images can also be added by drag-and-drop or clipboard paste. A dropped image opens under its full file name, retains its source path, and is saved back after editing. Pasted images create new unsaved tabs using the screenshot timestamp naming format. After a successful save, FShot remembers the containing directory and uses it when opening the Save dialog for other unsaved tabs. Paste uses <kbd>Ctrl</kbd>+<kbd>V</kbd> on Windows/Linux and <kbd>⌘</kbd>+<kbd>V</kbd> on macOS.
 
 ## Virtual 4K Capture (Windows experimental feature)
 
 The toolbar monitor button switches between physical (solid outline) and virtual (dashed outline) capture and remembers the choice. Virtual mode uses the same shortcuts:
 
-- `Ctrl+Shift+A`: move and resize the active window to the virtual monitor, capture it, then restore its original position, size, and window state.
-- `Ctrl+Shift+W`: select a window/control on the original monitor, move its owning window, and capture the tracked target. An unavailable or unstable target produces an error.
-- `Ctrl+Shift+F`: capture the monitor containing the cursor directly, in either mode.
-- `Ctrl+Shift+Q`: repeat the previous successful capture; physical and virtual modes maintain separate histories.
-- `Ctrl+Shift+R`: unavailable in virtual mode; switch to physical mode for region capture.
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>: move and resize the active window to the virtual monitor, capture it, then restore its original position, size, and window state.
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd>: select a window/control on the original monitor, move its owning window, and capture the tracked target. An unavailable or unstable target produces an error.
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>: capture the monitor containing the cursor directly, in either mode.
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>: repeat the previous successful capture; physical and virtual modes maintain separate histories.
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>: unavailable in virtual mode; switch to physical mode for region capture.
 
 FShot chooses the active virtual monitor with the largest pixel area. Window width and height are scaled independently according to their original proportions of the source monitor. Windows display scaling is left to the user. Minimized windows must be restored first; windows that cannot fit the destination work area are rejected. The original placement is restored after capture, cancellation, or failure. Layout and image detail depend on the target application's DPI support.
 
@@ -82,21 +82,21 @@ Switching to virtual mode checks for an existing virtual monitor and supported d
 
 ### Delayed active-window interaction
 
-Enable virtual mode and a delay greater than zero (try 5 or 10 seconds), leave the cursor on a physical monitor, focus the target app, and press `Ctrl+Shift+A`. After moving the target, FShot shows a non-activating mirror on the physical monitor. The countdown begins when the first frame is ready.
+Enable virtual mode and a delay greater than zero (try 5 or 10 seconds), leave the cursor on a physical monitor, focus the target app, and press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>. After moving the target, FShot shows a non-activating mirror on the physical monitor. The countdown begins when the first frame is ready.
 
-During the countdown, mouse input is forwarded to the virtual display and shown as a crosshair; keyboard input stays with the target. Click, drag, scroll, or open menus before capture. `Esc` cancels and restores the window and cursor. Losing target focus, disappearing targets, or input-forwarding failures stop the session. Elevated apps may reject forwarded input.
+During the countdown, mouse input is forwarded to the virtual display and shown as a crosshair; keyboard input stays with the target. Click, drag, scroll, or open menus before capture. <kbd>Esc</kbd> cancels and restores the window and cursor. Losing target focus, disappearing targets, or input-forwarding failures stop the session. Elevated apps may reject forwarded input.
 
 Preview capture runs in the background with a 30 fps target, scales to the physical preview size, and retains only the latest frame. Frame-ready notifications and local cursor repainting reduce waiting; actual responsiveness depends on the system and display driver. The final image still uses the virtual monitor's original pixels and includes native menus/new owned popups before closing the mirror. Custom-drawn menus need manual acceptance testing. Zero-delay, selected-control, and full-screen capture keep their existing flows.
 
 ## Capture Shortcuts
 
-- `Ctrl+Shift+Q`: Repeat the previous capture (reuses the previous region or selected window/control target; configurable in the shortcut panel)
-- `Ctrl+Shift+A`: Capture the focused window
-- `Ctrl+Shift+R`: Capture a rectangular region
-- `Ctrl+Shift+F`: Capture the full screen
-- `Ctrl+Shift+W`: Select and capture a window or control
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>: Repeat the previous capture (reuses the previous region or selected window/control target; configurable in the shortcut panel)
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>: Capture the focused window
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>: Capture a rectangular region
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>: Capture the full screen
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd>: Select and capture a window or control
 
-macOS uses the same `Ctrl+Shift` letter combinations. Grant the packaged `FShot.app` both Screen Recording and Accessibility access. When running through `uv`/`uvx`, the permission entry usually belongs to the host that launched the command, such as Terminal, iTerm2, or an IDE. After granting access, fully quit and reopen FShot or that host app.
+macOS uses the same <kbd>Ctrl</kbd>+<kbd>Shift</kbd> letter combinations. Grant the packaged `FShot.app` both Screen Recording and Accessibility access. When running through `uv`/`uvx`, the permission entry usually belongs to the host that launched the command, such as Terminal, iTerm2, or an IDE. After granting access, fully quit and reopen FShot or that host app.
 
 Editor shortcuts:
 
@@ -104,20 +104,20 @@ The line tool also creates arrows and endpoint markers, with a solid circle at t
 The pixel measurement tool uses the same press-and-drag interaction as a rectangle and shows live horizontal and vertical deltas from the starting point. The reading remains after release until you measure again or switch tools. It is an editor-only overlay and never changes the image or adds an undo entry.
 The leading editor-tool group can also rotate the current image 90° clockwise or flip it horizontally or vertically. The downscale button opens a panel matching the line-style controls and accepts a 1–99% physical image size. These operations mark the document as modified and can be undone.
 
-- `Alt+P`: Freehand pen
-- `Alt+L`: Line
-- `Alt+R`: Rectangle
-- `Alt+D`: Measure pixels
-- `Alt+T`: Text
-- `Alt+M`: Mosaic
-- `Alt+C`: Rotate clockwise 90°
-- `Alt+S`: Scale image down
-- `Alt+H`: Flip horizontally
-- `Alt+V`: Flip vertically
-- `Ctrl++` / `Ctrl+=`: Zoom in
-- `Ctrl+-`: Zoom out
-- `Ctrl+0`: Reset zoom
-- `F2`: Rename the current saved file directly in its tab (`Return` on macOS)
+- <kbd>Alt</kbd>+<kbd>P</kbd>: Freehand pen
+- <kbd>Alt</kbd>+<kbd>L</kbd>: Line
+- <kbd>Alt</kbd>+<kbd>R</kbd>: Rectangle
+- <kbd>Alt</kbd>+<kbd>D</kbd>: Measure pixels
+- <kbd>Alt</kbd>+<kbd>T</kbd>: Text
+- <kbd>Alt</kbd>+<kbd>M</kbd>: Mosaic
+- <kbd>Alt</kbd>+<kbd>C</kbd>: Rotate clockwise 90°
+- <kbd>Alt</kbd>+<kbd>S</kbd>: Scale image down
+- <kbd>Alt</kbd>+<kbd>H</kbd>: Flip horizontally
+- <kbd>Alt</kbd>+<kbd>V</kbd>: Flip vertically
+- <kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>Ctrl</kbd>+<kbd>=</kbd>: Zoom in
+- <kbd>Ctrl</kbd>+<kbd>-</kbd>: Zoom out
+- <kbd>Ctrl</kbd>+<kbd>0</kbd>: Reset zoom
+- <kbd>F2</kbd>: Rename the current saved file directly in its tab (<kbd>Return</kbd> on macOS)
 
 You can also double-click the name of a saved tab to rename it. The original file extension is preserved.
 
