@@ -1,6 +1,6 @@
 [project]
 name = "fshot"
-version = "0.0.18"
+version = "0.0.19"
 description = "Keyboard-first cross-platform screenshot utility"
 readme = "README.md"
 requires-python = ">=3.11"
