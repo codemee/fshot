@@ -89,10 +89,16 @@ def test_frozen_desktop_crop_uses_virtual_screen_coordinates():
 
 
 def test_freeze_desktop_counts_down_before_capture_and_uses_freeze_time_cursor(monkeypatch):
+    monkeypatch.setattr("fshot.capture.sys.platform", "win32")
     service = CaptureService()
     rect = CaptureRect(0, 0, 2, 2)
     image = Image.new("RGB", (2, 2))
+    windows = (WindowCaptureTarget(rect, lambda: rect, owner_hwnd=123, is_window=True),)
     events = []
+    monkeypatch.setattr(
+        "fshot.capture._snapshot_windows_targets",
+        lambda: events.append(("windows",)) or windows,
+    )
     monkeypatch.setattr(service, "_countdown", lambda seconds: events.append(("countdown", seconds)))
     monkeypatch.setattr(service, "_fullscreen_rect", lambda: events.append(("rect",)) or rect)
     monkeypatch.setattr(service, "_grab_rect", lambda value: events.append(("grab", value)) or image)
@@ -104,12 +110,13 @@ def test_freeze_desktop_counts_down_before_capture_and_uses_freeze_time_cursor(m
 
     frozen = service._freeze_desktop(CaptureSettings(include_cursor=True, delay_seconds=3))
 
-    assert frozen == _FrozenDesktop(rect, image)
+    assert frozen == _FrozenDesktop(rect, image, windows=windows)
     assert events == [
         ("countdown", 3),
         ("rect",),
         ("grab", rect),
         ("cursor", image, rect),
+        ("windows",),
     ]
 
 
