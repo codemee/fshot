@@ -23,6 +23,8 @@ Image drag/drop and paste use Qt `QMimeData`, `QUrl`, and clipboard APIs. On mac
 - Real cursor images are converted from Win32 handles best-effort.
 - Tray, editor, clipboard, save, crop, and drawing workflows are implemented.
 
+Virtual capture and its driver provisioning/input proxy are currently Windows-only; the virtual toggle is disabled on other platforms. The delayed active-window preview requires a physical monitor for the mirror and an active virtual monitor for the target. Verify clicking, dragging, scrolling, keyboard focus, native menu/popup inclusion, and full-resolution output. Cancellation, focus loss, target closure, display removal, and input failure must restore window placement and cursor position and release the mouse hook. Compare responsiveness across DPI settings and elevated apps; custom-drawn menus require separate acceptance. Full-screen capture must always capture the cursor's current monitor directly, and region capture remains unavailable in virtual mode.
+
 ### macOS
 
 - Quartz event taps consume `Ctrl+Shift+A/R/F/W`.

@@ -46,6 +46,8 @@
   - 管理 Screen Recording／Accessibility 權限、真實游標與可 consume 的全域快捷鍵。
 
 - `virtual_screen.py`
+  - 延遲操作預覽使用獨立背景執行緒及其專屬 MSS context，直接將 BGRA 轉為 QImage 並縮小至預覽像素尺寸；有鎖的單張信箱只保留最新影像，並以最多一個待處理的 queued signal 通知介面更新，避免累積舊畫面及額外輪詢等待。滑鼠移動以 4ms precise timer 合併轉送，按鍵／滾輪在下一輪事件迴圈處理；游標只更新新舊位置附近區域，預覽繪圖略過未變更的標題。目標邊界每 200ms、螢幕配置每秒及最終擷取前驗證。輸出前停止背景預覽，再由原擷取流程取得完整解析度。
+  - `virtual_interactive.py` 僅在虛擬作用中視窗擷取且延遲大於 0 時啟用。實體螢幕的非啟用預覽顯示完整虛擬螢幕；倒數期間以暫時 WH_MOUSE_LL hook 與 SendInput 轉送滑鼠，排除注入事件避免迴圈，鍵盤保留目標視窗焦點。finally 解除 hook、釋放按鍵及還原游標；先擷取原生功能表及新開啟的同程序 owned popup，再關閉預覽。
   - 工具列切換透過 application validator 檢查啟用中的虛擬螢幕；`virtual_display_setup.py` 檢查 VDD 驅動檔／裝置，使用者同意後以 QProcess 啟動 UAC helper，備份設定並建立一個 4K 延伸螢幕。主程式維持事件迴圈，失敗或取消會回到實體模式。
   - `VirtualCaptureSession` 提供快捷鍵模式的直接擷取與獨立 repeat 紀錄：前景視窗在事件處理前保存原生身分；選取控制項保留所屬 HWND，跨 DPI 移動後以 UIA RuntimeId 或唯一的 AutomationId／類型／class／名稱重新尋找元件，不按舊座標猜測。忽略部分 provider 在虛擬螢幕上的 offscreen 標記，但仍要求與所屬視窗相交並裁切其可見部分。區域擷取暫不支援。
   - 依 Windows 顯示卡驅動名稱辨識已啟用的虛擬螢幕，自動選擇像素面積最大的目標；工具列切換統一處理安裝及建立確認，系統匣不提供額外入口。

@@ -39,8 +39,8 @@ class CaptureSettings:
 class DrawingSettings:
     color: QColor
     line_width: int = 3
-    line_start_style: LineEndStyle = LineEndStyle.NONE
-    line_end_style: LineEndStyle = LineEndStyle.NONE
+    line_start_style: LineEndStyle = LineEndStyle.CIRCLE
+    line_end_style: LineEndStyle = LineEndStyle.ARROW
     font_family: str = "Segoe UI"
     font_size: int = 24
 

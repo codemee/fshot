@@ -201,7 +201,7 @@ class VirtualCaptureSession:
                 return None
         elif mode == CaptureMode.ACTIVE_WINDOW and target is None:
             raise RuntimeError(tr("virtual_target_unavailable"))
-        image = self._capture_target(service, display, target, settings, tr)
+        image = self._capture_target(service, display, target, settings, tr, interactive=mode == CaptureMode.ACTIVE_WINDOW)
         if image is not None:
             self.last = (mode, target)
         return image
@@ -214,9 +214,9 @@ class VirtualCaptureSession:
             return self.capture(service, _mode, settings, tr)
         if target is not None and target.resolve() is None:
             return None
-        return self._capture_target(service, automatic_display(tr), target, settings, tr)
+        return self._capture_target(service, automatic_display(tr), target, settings, tr, interactive=_mode == CaptureMode.ACTIVE_WINDOW)
 
-    def _capture_target(self, service, display, target, settings, tr):
+    def _capture_target(self, service, display, target, settings, tr, *, interactive=False):
         started = time.perf_counter()
         hwnd = target.owner_hwnd if target is not None else None
         logging.getLogger(__name__).warning(
@@ -236,6 +236,10 @@ class VirtualCaptureSession:
             # captures have no DPI/resize work to wait for.
             if hwnd is not None:
                 _wait_for_window_update(0.3)
+            if interactive and settings.delay_seconds > 0:
+                from fshot.virtual_interactive import delayed_interactive_capture
+
+                return delayed_interactive_capture(service, display, target, settings, tr)
             if settings.delay_seconds > 0 and service._countdown(settings.delay_seconds):
                 return None
             if hwnd is not None:

@@ -16,6 +16,10 @@ class LanguageMode(str, Enum):
 
 TRANSLATIONS = {
     "en": {
+        "virtual_interactive_hint": "Interactive virtual display — capture in {seconds}s\nMouse and keyboard control the target app. Esc cancels and restores the window.",
+        "virtual_interactive_screen": "Keep the cursor on a physical monitor before starting interactive virtual capture. The preview must be on a different display.",
+        "virtual_interactive_focus": "The target app could not keep keyboard focus. Interactive capture was stopped and the window will be restored.",
+        "virtual_interactive_input": "Mouse input could not be forwarded. The target app may have higher administrator privileges. Interactive capture was stopped.",
         "virtual_install_question": "No supported virtual display driver was found. Install VirtualDrivers Virtual Display Driver and then create a 3840 × 2160 virtual display?\n\nThe official package will be downloaded through WinGet. Installation will accept the package/source agreements and may require Windows administrator approval.",
         "virtual_install_progress": "Downloading and installing Virtual Display Driver…",
         "virtual_install_failed": "Virtual Display Driver could not be installed. You can install it manually with: winget install --id=VirtualDrivers.Virtual-Display-Driver -e",
@@ -27,7 +31,7 @@ TRANSLATIONS = {
         "virtual_setup_failed": "The virtual display could not be enabled at 3840 × 2160. Check Windows Display Settings or Virtual Driver Control, then try again.",
         "capture_screen_physical": "Capture screen: physical (click to switch)",
         "capture_screen_virtual": "Capture screen: virtual (click to switch)",
-        "capture_screen_help": "Virtual mode moves the active window or selected window/control. Full-screen capture always captures the monitor containing the cursor. Region capture is not available in virtual mode.",
+        "capture_screen_help": "Virtual mode moves the active window or selected window/control. A delayed active-window capture opens an interactive preview. Full-screen capture uses the monitor containing the cursor. Region capture is not available in virtual mode.",
         "virtual_region_unsupported": "Region capture is not available in virtual mode yet. Switch to physical mode to capture a region.",
         "virtual_target_unavailable": "The selected window or control cannot be tracked on the virtual display. It may have closed, been recreated or disappeared after losing focus. Select a stable window/control and try again.",
         "virtual_owner_unavailable": "The selected control has no movable owning window. Popup menus and system panels cannot be moved using this mode.",
@@ -142,6 +146,10 @@ TRANSLATIONS = {
         "tooltip_shortcut": "{label} ({shortcut})",
     },
     "zh_TW": {
+        "virtual_interactive_hint": "虛擬螢幕操作預覽 — {seconds} 秒後擷取\n滑鼠與鍵盤操作目標程式；Esc 取消並還原視窗。",
+        "virtual_interactive_screen": "請先將游標放在實體螢幕再啟動互動式虛擬擷取。預覽必須位於另一個螢幕。",
+        "virtual_interactive_focus": "目標程式無法維持鍵盤焦點，已停止互動式擷取並還原視窗。",
+        "virtual_interactive_input": "無法轉送滑鼠操作，目標程式可能使用較高的系統管理員權限。已停止互動式擷取。",
         "virtual_install_question": "找不到支援的虛擬螢幕驅動程式。是否安裝 VirtualDrivers Virtual Display Driver，並接著建立 3840 × 2160 虛擬螢幕？\n\n會透過 WinGet 下載官方套件並接受套件／來源授權條款；Windows 可能要求系統管理員確認。",
         "virtual_install_progress": "正在下載並安裝 Virtual Display Driver…",
         "virtual_install_failed": "Virtual Display Driver 安裝失敗。可手動執行：winget install --id=VirtualDrivers.Virtual-Display-Driver -e",
@@ -153,7 +161,7 @@ TRANSLATIONS = {
         "virtual_setup_failed": "無法啟用 3840 × 2160 虛擬螢幕。請檢查 Windows 顯示設定或 Virtual Driver Control 後再試。",
         "capture_screen_physical": "擷取螢幕：實體（點擊切換）",
         "capture_screen_virtual": "擷取螢幕：虛擬（點擊切換）",
-        "capture_screen_help": "虛擬模式會移動作用中視窗或選取的視窗／控制項。全螢幕一律擷取游標所在螢幕；虛擬模式暫不支援區域擷取。",
+        "capture_screen_help": "虛擬模式會移動作用中視窗或選取的視窗／控制項。作用中視窗設定延遲後可開啟操作預覽。全螢幕擷取游標所在螢幕；虛擬模式暫不支援區域擷取。",
         "virtual_region_unsupported": "虛擬模式暫不支援區域擷取。請切換為實體模式後擷取區域。",
         "virtual_target_unavailable": "無法在虛擬螢幕追蹤選取的視窗或控制項。目標可能已關閉、重新建立，或因失去焦點而消失。請重新選取穩定的視窗／控制項。",
         "virtual_owner_unavailable": "選取的子元件沒有可移動的所屬視窗。彈出功能表或系統面板無法使用此模式搬移。",
