@@ -631,11 +631,11 @@ class EditorWindow(QMainWindow):
 
         self.screen_mode_action = QAction(self)
         self.screen_mode_action.setCheckable(True)
-        self.screen_mode_action.setEnabled(sys.platform == "win32")
+        self.screen_mode_action.setEnabled(sys.platform in {"win32", "darwin"})
         self.screen_mode_action.triggered.connect(self._request_screen_mode)
         toolbar.addAction(self.screen_mode_action)
         self.screen_mode_action.setChecked(
-            sys.platform == "win32" and self.app_settings.value("capture/virtual_screen", False, type=bool)
+            sys.platform in {"win32", "darwin"} and self.app_settings.value("capture/virtual_screen", False, type=bool)
         )
         self._set_screen_mode(self.screen_mode_action.isChecked())
 
@@ -1117,14 +1117,15 @@ class EditorWindow(QMainWindow):
             self.screen_mode_action.setChecked(checked)
             self._set_screen_mode(checked)
         finally:
-            self.screen_mode_action.setEnabled(sys.platform == "win32")
+            self.screen_mode_action.setEnabled(sys.platform in {"win32", "darwin"})
 
     def _set_screen_mode(self, checked: bool) -> None:
         self.capture_settings.virtual_screen = checked
         self.app_settings.setValue("capture/virtual_screen", checked)
         label = self._tr("capture_screen_virtual" if checked else "capture_screen_physical")
         self.screen_mode_action.setText(label)
-        self.screen_mode_action.setToolTip(label + "\n" + self._tr("capture_screen_help"))
+        help_key = "mac_virtual_help" if sys.platform == "darwin" else "capture_screen_help"
+        self.screen_mode_action.setToolTip(label + "\n" + self._tr(help_key))
         self.screen_mode_action.setIcon(tool_icon("screen_mode", checked=checked, dark=self._is_dark_theme()))
 
     def _set_include_cursor(self, checked: bool) -> None:

@@ -16,6 +16,12 @@ class LanguageMode(str, Enum):
 
 TRANSLATIONS = {
     "en": {
+        "mac_virtual_permissions": "Grant FShot Accessibility and Screen Recording permissions before using virtual capture.",
+        "mac_virtual_version": "Virtual display capture requires macOS 14 or later.",
+        "mac_virtual_missing": "No selected 4K extended display is available. Create and enable a virtual screen using BetterDisplay or DeskPad, then switch virtual mode off and on to select it.",
+        "mac_virtual_choose": "Select an existing extended display for capture. Choose your virtual display; physical external displays are also listed. No display configuration will be changed.",
+        "mac_virtual_stage_one": "This experimental macOS version supports active-window and repeat capture only. Switch to physical mode for region or window/control selection.",
+        "mac_virtual_help": "Experimental macOS virtual capture: select an existing 4K extended display. Active windows are moved, captured and restored. Delay uses a countdown without interactive preview. Region and window/control selection are not available yet. Requires macOS 14 or later.",
         "virtual_interactive_hint": "Interactive virtual display — capture in {seconds}s\nMouse and keyboard control the target app. Esc cancels and restores the window.",
         "virtual_interactive_screen": "Keep the cursor on a physical monitor before starting interactive virtual capture. The preview must be on a different display.",
         "virtual_interactive_focus": "The target app could not keep keyboard focus. Interactive capture was stopped and the window will be restored.",
@@ -146,6 +152,12 @@ TRANSLATIONS = {
         "tooltip_shortcut": "{label} ({shortcut})",
     },
     "zh_TW": {
+        "mac_virtual_permissions": "使用虛擬擷取前，請授予 FShot「輔助使用」與「螢幕錄製」權限。",
+        "mac_virtual_version": "虛擬螢幕擷取需要 macOS 14 或更新版本。",
+        "mac_virtual_missing": "選取的 4K 延伸螢幕目前不可用。請先用 BetterDisplay 或 DeskPad 建立並啟用虛擬螢幕，再關閉及開啟虛擬模式以選擇螢幕。",
+        "mac_virtual_choose": "選擇既有的延伸螢幕作為擷取目標。請選取你的虛擬螢幕；清單也會列出實體外接螢幕。不會變更螢幕設定。",
+        "mac_virtual_stage_one": "此 macOS 實驗版本僅支援作用中視窗與重複擷取。區域或視窗／控制項選取請切換為實體模式。",
+        "mac_virtual_help": "macOS 實驗功能：選擇既有 4K 延伸螢幕，將作用中視窗移動、擷取後還原。延遲使用倒數，尚無操作預覽。區域及視窗／控制項選取尚未支援。需要 macOS 14 以上。",
         "virtual_interactive_hint": "虛擬螢幕操作預覽 — {seconds} 秒後擷取\n滑鼠與鍵盤操作目標程式；Esc 取消並還原視窗。",
         "virtual_interactive_screen": "請先將游標放在實體螢幕再啟動互動式虛擬擷取。預覽必須位於另一個螢幕。",
         "virtual_interactive_focus": "目標程式無法維持鍵盤焦點，已停止互動式擷取並還原視窗。",

@@ -87,7 +87,7 @@ uv run fshot
 | <img src="docs/images/toolbar/zoom_out.png" width="28" height="28" alt="縮小顯示"> | 縮小顯示 | 縮小編輯器中的圖片顯示，不改變圖片像素尺寸。<kbd>Ctrl</kbd>+<kbd>-</kbd> |
 | <img src="docs/images/toolbar/cursor_off.png" width="28" height="28" alt="不含游標"> <img src="docs/images/toolbar/cursor_on.png" width="28" height="28" alt="包含游標"> | 擷取時包含游標 | 單擊切換是否將游標加入截圖；有勾號表示啟用。 |
 | <img src="docs/images/toolbar/delay_off.png" width="28" height="28" alt="關閉延遲"> <img src="docs/images/toolbar/delay_5.png" width="28" height="28" alt="延遲五秒"> | 延遲擷取 | 開啟面板選擇關閉、1、3、5 秒或自訂 0–60 秒；圖示數字表示目前秒數。虛擬模式的作用中視窗設定延遲後會開啟操作預覽。 |
-| <img src="docs/images/toolbar/screen_physical.png" width="28" height="28" alt="實體螢幕"> <img src="docs/images/toolbar/screen_virtual.png" width="28" height="28" alt="虛擬螢幕"> | 實體／虛擬螢幕 | 單擊切換，實線表示實體、虛線表示虛擬，設定會保留。虛擬模式僅支援 Windows，缺少螢幕或驅動時會詢問是否建立／安裝。詳見下方虛擬擷取說明。 |
+| <img src="docs/images/toolbar/screen_physical.png" width="28" height="28" alt="實體螢幕"> <img src="docs/images/toolbar/screen_virtual.png" width="28" height="28" alt="虛擬螢幕"> | 實體／虛擬螢幕 | 單擊切換，實線表示實體、虛線表示虛擬，設定會保留。Windows 缺少螢幕或驅動時會詢問是否建立／安裝；macOS 第一階段需選擇既有 4K 延伸螢幕。詳見下方虛擬擷取說明。 |
 | <img src="docs/images/toolbar/keyboard.png" width="28" height="28" alt="擷取快捷鍵"> | 設定擷取快捷鍵 | 設定四種擷取模式及重複擷取的 <kbd>Ctrl</kbd>／<kbd>Shift</kbd>／<kbd>Alt</kbd> 加 <kbd>A</kbd>–<kbd>Z</kbd> 組合；<kbd>Shift</kbd> 須搭配 <kbd>Ctrl</kbd> 或 <kbd>Alt</kbd>。按 OK 且註冊成功後套用，Cancel 不變更；「使用預設」重設面板欄位。 |
 | <img src="docs/images/toolbar/theme_system.png" width="28" height="28" alt="跟隨系統主題"> <img src="docs/images/toolbar/theme_light.png" width="28" height="28" alt="淺色主題"> <img src="docs/images/toolbar/theme_dark.png" width="28" height="28" alt="深色主題"> | 主題 | 單擊循環切換「跟隨系統 → 淺色 → 深色」，並保留選擇；太陽與月亮組合表示跟隨系統。 |
 | <img src="docs/images/toolbar/language_system.png" width="28" height="28" alt="跟隨系統語言"> <img src="docs/images/toolbar/language_zh_TW.png" width="28" height="28" alt="繁體中文"> <img src="docs/images/toolbar/language_en.png" width="28" height="28" alt="英文"> | 語言 | 單擊循環切換「跟隨系統 → 繁體中文 → English」，並保留選擇；圖示依序為文/A、中、En。 |
@@ -202,7 +202,24 @@ macOS 的復原、複製與存檔使用 <kbd>⌘</kbd> 組合鍵；顯示縮放�
 - **最小化視窗**：請先還原再擷取。
 - **尺寸超出可用範圍**：換算後無法放入目標螢幕時會中止，請先縮小來源視窗。
 - **畫質與布局**：取決於目標程式的 DPI 支援及尺寸限制；舊式程式或低解析度素材可能無法增加細節。
-- **平台支援**：macOS 尚未提供此移動與預覽流程。
+- **平台支援**：上述完整流程僅適用 Windows；macOS 第一階段支援請見下方。
+
+## macOS 虛擬螢幕擷取（第一階段實驗功能）
+
+需要 macOS 14 以上，以及 FShot 的「輔助使用」與「螢幕錄製」權限。
+先使用 BetterDisplay 或 DeskPad 建立至少 3840 × 2160 像素的延伸虛擬螢幕。
+這一階段不會安裝軟體、建立螢幕或修改顯示設定。
+
+1. 點擊工具列螢幕按鈕，選擇已啟用的 4K 延伸螢幕。清單也會列出符合尺寸的實體外接螢幕，請確認選取正確目標。
+2. 將要擷取的程式視窗留在另一個螢幕，按 `Ctrl+Shift+A`。
+3. FShot 依來源／目的螢幕的邏輯尺寸比例調整視窗，移至目的螢幕可用範圍，再以 ScreenCaptureKit 擷取原生像素。
+4. 完成、取消或擷取失敗後還原原視窗的位置與大小。`Ctrl+Shift+Q` 可重複成功的虛擬擷取。
+
+延遲設定使用一般倒數，尚無操作預覽。全螢幕沿用既有 macOS 擷取行為；區域與視窗／控制項選取暫不支援虛擬模式。
+最小化、全螢幕或無法調整位置／尺寸的視窗會被拒絕。視窗不接受指定尺寸、目的螢幕斷線／配置改變或目標中心被遮擋時，會中止並嘗試還原；中心檢查不保證所有角落皆未被遮擋。
+目的螢幕以 UUID 保存，下次變更目標時可先關閉再開啟虛擬模式重新選取。
+
+後續階段：加入內建虛擬螢幕建立、AX 控制項追蹤，再加入保留焦點的延遲操作預覽與滑鼠轉送。
 
 ## Windows Shortcuts
 

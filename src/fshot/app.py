@@ -182,6 +182,10 @@ class FShotApplication(QObject):
         self.language_manager = LanguageManager()
         self.capture = CaptureService()
         self.virtual_capture = VirtualCaptureSession()
+        if sys.platform == "darwin":
+            from fshot.platforms.macos_virtual import VirtualCaptureSession as MacVirtualCaptureSession
+
+            self.virtual_capture = MacVirtualCaptureSession()
         self.window = EditorWindow(self.theme_manager, self.language_manager)
         self.window.screen_mode_validator = self._ensure_virtual_screen
         self.hotkey_store = HotkeyStore()
@@ -233,8 +237,12 @@ class FShotApplication(QObject):
         if self._capture_in_progress:
             return
         settings = self.window.capture_settings
-        if settings.virtual_screen and sys.platform == "win32":
-            target = self.virtual_capture.active_target() if mode == CaptureMode.ACTIVE_WINDOW else None
+        if settings.virtual_screen and sys.platform in {"win32", "darwin"}:
+            try:
+                target = self.virtual_capture.active_target() if mode == CaptureMode.ACTIVE_WINDOW else None
+            except Exception as exc:
+                self._show_capture_error(exc)
+                return
             frozen = None
 
             def prepare_virtual_selection():
@@ -261,7 +269,7 @@ class FShotApplication(QObject):
         )
 
     def repeat_capture(self) -> None:
-        if self.window.capture_settings.virtual_screen and sys.platform == "win32":
+        if self.window.capture_settings.virtual_screen and sys.platform in {"win32", "darwin"}:
             self._start_capture(lambda: self.virtual_capture.repeat(
                 self.capture, self.window.capture_settings, self.language_manager.text,
             ))
@@ -269,6 +277,19 @@ class FShotApplication(QObject):
         self._start_capture(lambda: self.capture.repeat(self.window.capture_settings))
 
     def _ensure_virtual_screen(self) -> bool:
+        if sys.platform == "darwin":
+            from fshot.platforms.macos_virtual import choose_display
+
+            if self._capture_in_progress:
+                return False
+            self._capture_in_progress = True
+            try:
+                return choose_display(self.window, self.window.app_settings, self.language_manager.text)
+            except Exception as exc:
+                self._show_capture_error(exc)
+                return False
+            finally:
+                self._capture_in_progress = False
         from fshot.virtual_screen import displays
         from fshot.virtual_display_setup import installed_driver, install_driver, create_4k_display
 
