@@ -48,7 +48,12 @@
 - `platforms/macos_virtual.py`
   - 使用既有 4K 延伸螢幕，由使用者明確選取並保存 UUID；使用 AX 元件、PID 與 CGWindowID 追蹤作用中視窗。
   - 比例換算及 AX 移動使用 Quartz points，ScreenCaptureKit 輸出使用 display mode pixels。context manager 在部分搬移失敗、倒數取消與擷取錯誤後還原幾何。
-  - 擷取前檢查螢幕配置、視窗幾何及中心遮擋；非同步擷取有十秒逾時，等待時保持 Qt 事件處理。第一階段需要 macOS 14 以上，尚無螢幕建立、控制項虛擬擷取及互動預覽。
+  - 擷取前檢查螢幕配置、視窗幾何及中心遮擋；非同步擷取有十秒逾時，等待時保持 Qt 事件處理。需要 macOS 14 以上，尚無互動預覽。
+  - 指定視窗／控制項保留 `WindowCaptureTarget.native_target` 的 `MacCaptureTarget`；以 PID／CGWindowID 配對唯一 AXWindow，驗證 AX 所屬視窗。選取標題列／外框擷取全視窗，控制項移動後重新讀取 AX 邊界並裁切至所屬視窗；失效不重新 hit-test 或按舊座標猜測。AX hit-test 直接指定底下應用程式，避免 FShot 遮罩阻擋。
+
+- `platforms/macos_virtual_setup.py`
+  - 使用 BetterDisplay CLI 建立／連接 FShot 專用 1920 × 1080 HiDPI（3840 × 2160 pixels）螢幕。無可用螢幕時詢問，或由螢幕選單明確選擇建立。
+  - QProcess 使用參數陣列與 35 秒上限，等待時保持 Qt 事件處理。建立前保存隨機名稱，建立後保存 tagID／serial／model／vendor 指紋；重試時驗證身分，只設定自建螢幕。定義與連線跨 FShot 退出保留，不使用全域 discard／disconnect。
 
 - `virtual_screen.py`
   - 延遲操作預覽使用獨立背景執行緒及其專屬 MSS context，直接將 BGRA 轉為 QImage 並縮小至預覽像素尺寸；有鎖的單張信箱只保留最新影像，並以最多一個待處理的 queued signal 通知介面更新，避免累積舊畫面及額外輪詢等待。滑鼠移動以 4ms precise timer 合併轉送，按鍵／滾輪在下一輪事件迴圈處理；游標只更新新舊位置附近區域，預覽繪圖略過未變更的標題。目標邊界每 200ms、螢幕配置每秒及最終擷取前驗證。輸出前停止背景預覽，再由原擷取流程取得完整解析度。

@@ -34,10 +34,11 @@ Windows 延遲操作預覽的手動驗收另需確認：游標在實體螢幕時
 
 ### macOS
 
-虛擬擷取第一階段使用 `platforms/macos_virtual.py`，需要 macOS 14 以上及既有的 4K 延伸螢幕。
+虛擬擷取使用 `platforms/macos_virtual.py`，需要 macOS 14 以上及 4K 延伸螢幕。
 使用者明確選擇目標螢幕，AX 位置與大小以 points 處理，ScreenCaptureKit 以原生 pixels 輸出。
-作用中視窗與重複擷取已接上；延遲為一般倒數。區域／控制項虛擬擷取、內建螢幕建立與互動預覽待後續階段。
+作用中視窗、指定視窗／控制項與重複擷取已接上；延遲為一般倒數。第二階段透過 BetterDisplay CLI 建立／重新連接自建螢幕，保留定義供重試，不修改使用者螢幕。區域虛擬擷取與互動預覽尚未支援。
 手動驗收需確認：HiDPI／非 HiDPI、負座標、不同長寬比、不可縮放視窗、取消／錯誤／拔除目的螢幕後的還原，以及輸出圖片的實際像素尺寸。Windows backend 維持獨立。
+第二階段另需驗證非作用中視窗標題列選取、原生與瀏覽器控制項重新布局、移動後 AX 元件失效／隱藏、repeat、CLI 停用／BetterDisplay 缺失、建立取消／逾時重試與自建螢幕身分變更。FShot 退出後保留 BetterDisplay 螢幕，不關閉使用者的虛擬螢幕。
 
 已實作：
 

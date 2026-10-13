@@ -13,7 +13,7 @@ hidden_imports = []
 if sys.platform == "win32":
     hidden_imports.append("comtypes.gen.UIAutomationClient")
 elif sys.platform == "darwin":
-    hidden_imports.extend(["AppKit", "ApplicationServices", "Quartz"])
+    hidden_imports.extend(["AppKit", "ApplicationServices", "Quartz", "ScreenCaptureKit"])
 
 analysis = Analysis(
     [str(ROOT / "src" / "fshot" / "__main__.py")],
@@ -78,6 +78,7 @@ elif sys.platform == "darwin":
             "CFBundleVersion": VERSION,
             "LSApplicationCategoryType": "public.app-category.utilities",
             "NSHighResolutionCapable": True,
+            "NSScreenCaptureUsageDescription": "FShot captures windows and virtual displays for screenshots.",
         },
     )
 else:

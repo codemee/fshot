@@ -74,3 +74,25 @@ def test_public_ax_role_strings_work_without_exported_constants() -> None:
         {getattr(Accessibility, "kAXLinkRole", "AXLink")},
         Accessibility,
     )
+
+
+def test_hit_test_uses_underlying_application_not_overlay(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+    from fshot.platforms import macos
+
+    roots = []
+    ax = SimpleNamespace(
+        kAXErrorSuccess=0,
+        AXUIElementCreateApplication=lambda pid: ("app", pid),
+        AXUIElementCopyElementAtPosition=lambda root, *args: (roots.append(root) or (0, "control")),
+        AXUIElementGetPid=lambda *args: (0, 123),
+    )
+    monkeypatch.setitem(sys.modules, "ApplicationServices", ax)
+    monkeypatch.setattr(macos, "_frameworks", lambda: (None, None))
+    monkeypatch.setattr(macos, "_window_target_at_point", lambda *args: ((0, 0, 500, 500), 456, 123))
+    monkeypatch.setattr(macos, "_ax_element_bounds", lambda *args: (10, 20, 100, 40))
+    bounds, target = macos.capture_target_at_point(20, 30)
+    assert roots == [("app", 123)]
+    assert bounds == (10, 20, 100, 40)
+    assert target.element == "control"

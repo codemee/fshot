@@ -171,6 +171,7 @@ class WindowCaptureTarget:
     owner_hwnd: int | None = None
     is_window: bool = False
     source_hwnd: int | None = None
+    native_target: object | None = None
 
     def resolve(self) -> CaptureRect | None:
         try:
@@ -462,6 +463,7 @@ class WindowSelector(QWidget):
             return WindowCaptureTarget(
                 CaptureRect(*bounds),
                 lambda: _capture_rect_from_bounds(capture_target_bounds(native_target)),
+                native_target=native_target,
             )
         surface = next((window for window in self.frozen_windows if _rect_contains(window.rect, point)), None)
         frozen = [

@@ -1,4 +1,4 @@
-"""Stage-one virtual capture: existing extended display, movable AX window.
+"""Virtual capture on macOS with AX window/control identity and native pixels.
 
 Window/display rectangles are Quartz points. Only capture output is in pixels.
 Native frameworks are loaded lazily so Windows never imports them.
@@ -14,7 +14,7 @@ import uuid
 
 from PIL import Image
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QApplication, QInputDialog
+from PySide6.QtWidgets import QApplication, QInputDialog, QMessageBox
 
 from fshot.capture import CaptureRect
 from fshot.settings import CaptureMode
@@ -64,6 +64,7 @@ class Target:
     element: object
     pid: int
     window_id: int
+    control: object | None = None
 
 
 def displays() -> list[Display]:
@@ -109,15 +110,33 @@ def choose_display(parent, settings: QSettings, tr) -> bool:
     choices = [item for item in displays() if item.display_id != quartz.CGMainDisplayID()
                and item.pixel_width >= 3840 and item.pixel_height >= 2160]
     if not choices:
-        raise RuntimeError(tr("mac_virtual_missing"))
+        answer = QMessageBox.question(
+            parent, "FShot", tr("mac_virtual_create_question"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return False
+        from fshot.platforms.macos_virtual_setup import ensure_display
+
+        created = ensure_display(parent, settings, tr)
+        settings.setValue(DISPLAY_KEY, created.identifier)
+        return True
     labels = [f"{item.name} — {item.pixel_width} × {item.pixel_height} px "
               f"({item.rect.width} × {item.rect.height} pt) [{item.display_id}]" for item in choices]
+    labels.append(tr("mac_virtual_create_option"))
     saved = settings.value(DISPLAY_KEY, "")
     initial = next((i for i, item in enumerate(choices) if item.identifier == saved), 0)
     label, accepted = QInputDialog.getItem(parent, tr("virtual_screen_display"),
                                           tr("mac_virtual_choose"), labels, initial, False)
     if not accepted:
         return False
+    if label == labels[-1]:
+        from fshot.platforms.macos_virtual_setup import ensure_display
+
+        created = ensure_display(parent, settings, tr)
+        settings.setValue(DISPLAY_KEY, created.identifier)
+        return True
     settings.setValue(DISPLAY_KEY, choices[labels.index(label)].identifier)
     return True
 
@@ -159,6 +178,84 @@ def target_bounds(target: Target) -> CaptureRect | None:
         return None
     bounds = macos._ax_element_bounds(target.element, ax)
     return CaptureRect(*bounds) if bounds else None
+
+
+def _owner_element(native: macos.MacCaptureTarget):
+    """Match an AX window to the selected CGWindowID, never the focused window."""
+    import ApplicationServices as ax
+
+    bounds = macos._window_for_id(native.window_id, native.owner_pid)
+    if bounds is None:
+        return None
+    application = ax.AXUIElementCreateApplication(native.owner_pid)
+    windows = macos._ax_attribute(application, ax.kAXWindowsAttribute, ax) or ()
+    matches = [window for window in windows if macos._ax_element_bounds(window, ax) == bounds]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _belongs_to_window(element, owner, pid: int) -> bool:
+    import ApplicationServices as ax
+
+    _appkit, quartz = macos._frameworks()
+    error, actual_pid = ax.AXUIElementGetPid(element, None)
+    if error != ax.kAXErrorSuccess or actual_pid != pid:
+        return False
+    window = macos._ax_attribute(element, ax.kAXWindowAttribute, ax)
+    if window is not None:
+        return bool(quartz.CFEqual(window, owner))
+    current = element
+    for _ in range(64):
+        if current is None:
+            return False
+        if quartz.CFEqual(current, owner):
+            return True
+        current = macos._ax_attribute(current, ax.kAXParentAttribute, ax)
+    return False
+
+
+def target_from_selection(selected) -> Target:
+    import ApplicationServices as ax
+
+    native = selected.native_target
+    if not isinstance(native, macos.MacCaptureTarget):
+        raise RuntimeError("The selected target has no macOS window identity.")
+    owner = _owner_element(native)
+    if owner is None:
+        raise RuntimeError("The selected target has no unique movable owning window.")
+    control = native.element
+    if control is not None:
+        if not _belongs_to_window(control, owner, native.owner_pid):
+            raise RuntimeError("The selected control does not belong to its recorded window.")
+        role = macos._ax_attribute(control, ax.kAXRoleAttribute, ax)
+        # Selecting the window frame/title bar means capturing the whole window.
+        if role in {"AXWindow", "AXTitleBar"}:
+            control = None
+    return Target(owner, native.owner_pid, native.window_id, control)
+
+
+def selected_bounds(target: Target) -> CaptureRect | None:
+    """Read current AX geometry after layout; do not scale old control bounds."""
+    import ApplicationServices as ax
+
+    owner = target_bounds(target)
+    if owner is None:
+        return None
+    if target.control is None:
+        return owner
+    if not _belongs_to_window(target.control, target.element, target.pid):
+        return None
+    if macos._ax_attribute(target.control, "AXHidden", ax):
+        return None
+    bounds = macos._ax_element_bounds(target.control, ax)
+    return CaptureRect(*bounds).intersect(owner) if bounds else None
+
+
+def raise_window(target: Target) -> None:
+    import ApplicationServices as ax
+
+    result = ax.AXUIElementPerformAction(target.element, ax.kAXRaiseAction)
+    if result != ax.kAXErrorSuccess:
+        raise RuntimeError("Could not bring the selected window forward.")
 
 
 def validate_window(target: Target) -> None:
@@ -311,9 +408,14 @@ class VirtualCaptureSession:
         if mode == CaptureMode.FULLSCREEN:
             # Preserve ordinary full-screen behavior, without moving a window.
             image = service.capture(mode, settings)
-        elif mode != CaptureMode.ACTIVE_WINDOW:
-            raise RuntimeError(tr("mac_virtual_stage_one"))
+        elif mode == CaptureMode.REGION:
+            raise RuntimeError(tr("virtual_region_unsupported"))
         else:
+            if mode == CaptureMode.WINDOW_UNDER_CURSOR and target is None:
+                selected = service._select_window_target(frozen)
+                if selected is None:
+                    return None
+                target = target_from_selection(selected)
             if target is None:
                 raise RuntimeError(tr("virtual_target_unavailable"))
             identifier = QSettings().value(DISPLAY_KEY, "")
@@ -321,16 +423,22 @@ class VirtualCaptureSession:
             if display is None:
                 raise RuntimeError(tr("mac_virtual_missing"))
             with moved_window(target, display) as rect:
+                if mode == CaptureMode.WINDOW_UNDER_CURSOR:
+                    raise_window(target)
+                    QApplication.processEvents()
                 if settings.delay_seconds > 0 and service._countdown(settings.delay_seconds):
                     return None
                 resolve_display(display)
                 if target_bounds(target) != rect:
                     raise RuntimeError(tr("virtual_target_unavailable"))
-                visible = macos._window_target_at_point(rect.left + rect.width // 2,
-                                                        rect.top + rect.height // 2)
+                capture_bounds = selected_bounds(target) if target.control is not None else rect
+                if capture_bounds is None:
+                    raise RuntimeError(tr("virtual_control_unavailable"))
+                visible = macos._window_target_at_point(capture_bounds.left + capture_bounds.width // 2,
+                                                        capture_bounds.top + capture_bounds.height // 2)
                 if visible is None or visible[1:] != (target.window_id, target.pid):
                     raise RuntimeError(tr("virtual_target_obscured"))
-                image = capture_rect(display, rect, settings.include_cursor)
+                image = capture_rect(display, capture_bounds, settings.include_cursor)
         if image is not None:
             self.last = (mode, target)
         return image
@@ -340,5 +448,7 @@ class VirtualCaptureSession:
             return None
         mode, target = self.last
         if target is not None and target_bounds(target) is None:
+            return None
+        if target is not None and target.control is not None and selected_bounds(target) is None:
             return None
         return self.capture(service, mode, settings, tr, target)

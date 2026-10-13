@@ -100,11 +100,13 @@ def capture_target_at_point(
     if window is None:
         return None
     containing_window, window_id, owner_pid = window
-    system = accessibility.AXUIElementCreateSystemWide()
-    result, element = accessibility.AXUIElementCopyElementAtPosition(system, float(x), float(y), None)
+    # Hit-test the underlying application, not the system-wide root: the
+    # selection overlay belongs to FShot and otherwise hides its AX controls.
+    application = accessibility.AXUIElementCreateApplication(owner_pid)
+    result, element = accessibility.AXUIElementCopyElementAtPosition(application, float(x), float(y), None)
     if result == accessibility.kAXErrorSuccess and element is not None:
         pid_result, pid = accessibility.AXUIElementGetPid(element, None)
-        if pid_result == accessibility.kAXErrorSuccess and pid != os.getpid():
+        if pid_result == accessibility.kAXErrorSuccess and pid == owner_pid and pid != os.getpid():
             rect = _ax_element_bounds(element, accessibility)
             if rect is not None and containing_window is not None:
                 rect = _intersect_rects(rect, containing_window)
