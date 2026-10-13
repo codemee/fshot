@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes
+import logging
 import math
+import re
 import threading
 import time
 
@@ -18,13 +20,33 @@ class PreviewNotifications(QObject):
     ready = Signal()
 
 
+def _dxgi_camera(device: str):
+    """Find the DXGI output matching a Win32 display device name."""
+    import dxcam
+
+    # output_info is public, but it does not expose device names. Check each
+    # output's DXGI descriptor so equal-sized monitors cannot be confused.
+    outputs = re.findall(r"Device\[(\d+)\] Output\[(\d+)\]", dxcam.output_info())
+    for device_idx, output_idx in outputs:
+        camera = dxcam.create(device_idx=int(device_idx), output_idx=int(output_idx),
+                              output_color="BGRA", processor_backend="numpy")
+        try:
+            if camera._output.desc.DeviceName.casefold() == device.casefold():
+                return camera
+        except Exception:
+            camera.release()
+            raise
+        camera.release()
+    raise RuntimeError(f"DXGI output unavailable: {device}")
+
+
 class PreviewFrames:
     """Capture off the UI thread with a bounded, latest-frame-only mailbox."""
 
-    def __init__(self, display: CaptureRect, size: QSize, dpr: float):
+    def __init__(self, display: CaptureRect, size: QSize, dpr: float, device: str | None = None):
         self.monitor = {"left": display.left, "top": display.top,
                         "width": display.width, "height": display.height}
-        self.size, self.dpr = QSize(size), dpr
+        self.size, self.dpr, self.device = QSize(size), dpr, device
         self.stopped = threading.Event()
         self.lock = threading.Lock()
         self.latest = None
@@ -51,21 +73,42 @@ class PreviewFrames:
         with mss.mss() as capture:
             return self._frame(capture)
 
+    def _dxgi_frame(self, camera):
+        frame = camera.grab(new_frame_only=False)
+        if frame is None:
+            return None
+        image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0],
+                       QImage.Format.Format_RGB32)
+        if image.size() == self.size:
+            image = image.copy()
+        else:
+            image = image.scaled(self.size, Qt.AspectRatioMode.IgnoreAspectRatio,
+                                 Qt.TransformationMode.FastTransformation)
+        image.setDevicePixelRatio(self.dpr)
+        return image
+
     def _run(self):
         import mss
 
         try:
-            # MSS owns thread-local native handles; never share them with the UI.
-            with mss.mss() as capture:
+            camera = None
+            if self.device is not None:
+                try:
+                    camera = _dxgi_camera(self.device)
+                except Exception:
+                    logging.getLogger(__name__).warning("DXGI preview unavailable; using MSS", exc_info=True)
+            # Both DXGI and MSS own native resources on the capture thread.
+            with mss.mss() if camera is None else camera as capture:
                 while not self.stopped.is_set():
                     started = time.monotonic()
-                    image = self._frame(capture)
-                    with self.lock:
-                        self.latest = image
-                        notify = not self.notification_pending
-                        self.notification_pending = True
-                    if notify:
-                        self.notifications.ready.emit()
+                    image = self._frame(capture) if camera is None else self._dxgi_frame(capture)
+                    if image is not None:
+                        with self.lock:
+                            self.latest = image
+                            notify = not self.notification_pending
+                            self.notification_pending = True
+                        if notify:
+                            self.notifications.ready.emit()
                     self.stopped.wait(max(0, 1/30-(time.monotonic()-started)))
         except Exception as exc:
             with self.lock:
@@ -373,7 +416,8 @@ def delayed_interactive_capture(service, display, target, settings, tr):
     mouse = MouseProxy(display.rect, service._fullscreen_rect(), view, owner)
     dpr = view.devicePixelRatioF()
     area = view.image_area()
-    frames = PreviewFrames(display.rect, QSize(round(area.width()*dpr), round(area.height()*dpr)), dpr)
+    frames = PreviewFrames(display.rect, QSize(round(area.width()*dpr), round(area.height()*dpr)),
+                           dpr, display.device)
     loop = QEventLoop()
     timer = QTimer(view)
     timer.setTimerType(Qt.TimerType.PreciseTimer)

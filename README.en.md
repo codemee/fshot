@@ -86,7 +86,7 @@ Enable virtual mode and a delay greater than zero (try 5 or 10 seconds), leave t
 
 During the countdown, mouse input is forwarded to the virtual display and shown as a crosshair; keyboard input stays with the target. Click, drag, scroll, or open menus before capture. <kbd>Esc</kbd> cancels and restores the window and cursor. Losing target focus, disappearing targets, or input-forwarding failures stop the session. Elevated apps may reject forwarded input.
 
-Preview capture runs in the background with a 30 fps target, scales to the physical preview size, and retains only the latest frame. Frame-ready notifications and local cursor repainting reduce waiting; actual responsiveness depends on the system and display driver. The final image still uses the virtual monitor's original pixels and includes native menus/new owned popups before closing the mirror. Custom-drawn menus need manual acceptance testing. Zero-delay, selected-control, and full-screen capture keep their existing flows.
+Preview capture runs in the background with a 30 fps target, scales to the physical preview size, and retains only the latest frame. On Windows it uses DXGI for the virtual display when available and falls back to `mss` if DXGI cannot start. Run `uv run python scripts/benchmark_windows_preview.py` to compare both paths on your computer. Frame-ready notifications and local cursor repainting reduce waiting; actual responsiveness depends on the system and display driver. The final image still uses the virtual monitor's original pixels and includes native menus/new owned popups before closing the mirror. Custom-drawn menus need manual acceptance testing. Zero-delay, selected-control, and full-screen capture keep their existing flows.
 
 ## Capture Shortcuts
 
