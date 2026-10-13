@@ -14,7 +14,7 @@ import uuid
 
 from PIL import Image
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QApplication, QInputDialog, QMessageBox
+from PySide6.QtWidgets import QApplication
 
 from fshot.capture import CaptureRect
 from fshot.settings import CaptureMode
@@ -107,37 +107,23 @@ def choose_display(parent, settings: QSettings, tr) -> bool:
     if not macos.accessibility_allowed() or not macos.screen_recording_allowed():
         raise RuntimeError(tr("mac_virtual_permissions"))
     _appkit, quartz = macos._frameworks()
-    choices = [item for item in displays() if item.display_id != quartz.CGMainDisplayID()
-               and item.pixel_width >= 3840 and item.pixel_height >= 2160]
-    if not choices:
-        answer = QMessageBox.question(
-            parent, "FShot", tr("mac_virtual_create_question"),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if answer != QMessageBox.StandardButton.Yes:
-            return False
-        from fshot.platforms.macos_virtual_setup import ensure_display
+    from fshot.platforms.macos_virtual_setup import DISPLAY_NAME, ensure_display
+    from fshot.platforms.macos_virtual_install import ensure_application
 
-        created = ensure_display(parent, settings, tr)
-        settings.setValue(DISPLAY_KEY, created.identifier)
+    matches = [item for item in displays() if item.name == DISPLAY_NAME]
+    if len(matches) > 1:
+        raise RuntimeError("The FShot-4K display name is ambiguous.")
+    current = matches[0] if matches else None
+    if current is not None and current.display_id == quartz.CGMainDisplayID():
+        raise RuntimeError("FShot-4K must be an extended display, not the main display.")
+    if current is not None and current.display_id != quartz.CGMainDisplayID() and (
+            current.pixel_width, current.pixel_height) == (3840, 2160):
+        settings.setValue(DISPLAY_KEY, current.identifier)
         return True
-    labels = [f"{item.name} — {item.pixel_width} × {item.pixel_height} px "
-              f"({item.rect.width} × {item.rect.height} pt) [{item.display_id}]" for item in choices]
-    labels.append(tr("mac_virtual_create_option"))
-    saved = settings.value(DISPLAY_KEY, "")
-    initial = next((i for i, item in enumerate(choices) if item.identifier == saved), 0)
-    label, accepted = QInputDialog.getItem(parent, tr("virtual_screen_display"),
-                                          tr("mac_virtual_choose"), labels, initial, False)
-    if not accepted:
+    if not ensure_application(parent, tr):
         return False
-    if label == labels[-1]:
-        from fshot.platforms.macos_virtual_setup import ensure_display
-
-        created = ensure_display(parent, settings, tr)
-        settings.setValue(DISPLAY_KEY, created.identifier)
-        return True
-    settings.setValue(DISPLAY_KEY, choices[labels.index(label)].identifier)
+    created = ensure_display(parent, settings, tr)
+    settings.setValue(DISPLAY_KEY, created.identifier)
     return True
 
 
@@ -426,6 +412,13 @@ class VirtualCaptureSession:
                 if mode == CaptureMode.WINDOW_UNDER_CURSOR:
                     raise_window(target)
                     QApplication.processEvents()
+                if mode == CaptureMode.ACTIVE_WINDOW and settings.delay_seconds > 0:
+                    from fshot.platforms.macos_interactive import delayed_interactive_capture
+
+                    image = delayed_interactive_capture(service, display, target, settings, tr)
+                    if image is not None:
+                        self.last = (mode, target)
+                    return image
                 if settings.delay_seconds > 0 and service._countdown(settings.delay_seconds):
                     return None
                 resolve_display(display)

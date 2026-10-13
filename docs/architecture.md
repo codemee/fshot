@@ -46,14 +46,27 @@
   - 管理 Screen Recording／Accessibility 權限、真實游標與可 consume 的全域快捷鍵。
 
 - `platforms/macos_virtual.py`
-  - 使用既有 4K 延伸螢幕，由使用者明確選取並保存 UUID；使用 AX 元件、PID 與 CGWindowID 追蹤作用中視窗。
+  - 切換時自動選用固定名稱 FShot-4K 的 4K 延伸螢幕並保存 UUID，名稱重複或作為主螢幕時拒絕使用；使用 AX 元件、PID 與 CGWindowID 追蹤作用中視窗。
   - 比例換算及 AX 移動使用 Quartz points，ScreenCaptureKit 輸出使用 display mode pixels。context manager 在部分搬移失敗、倒數取消與擷取錯誤後還原幾何。
-  - 擷取前檢查螢幕配置、視窗幾何及中心遮擋；非同步擷取有十秒逾時，等待時保持 Qt 事件處理。需要 macOS 14 以上，尚無互動預覽。
+  - 擷取前檢查螢幕配置、視窗幾何及中心遮擋；非同步擷取有十秒逾時，等待時保持 Qt 事件處理。需要 macOS 14 以上。
   - 指定視窗／控制項保留 `WindowCaptureTarget.native_target` 的 `MacCaptureTarget`；以 PID／CGWindowID 配對唯一 AXWindow，驗證 AX 所屬視窗。選取標題列／外框擷取全視窗，控制項移動後重新讀取 AX 邊界並裁切至所屬視窗；失效不重新 hit-test 或按舊座標猜測。AX hit-test 直接指定底下應用程式，避免 FShot 遮罩阻擋。
 
 - `platforms/macos_virtual_setup.py`
-  - 使用 BetterDisplay CLI 建立／連接 FShot 專用 1920 × 1080 HiDPI（3840 × 2160 pixels）螢幕。無可用螢幕時詢問，或由螢幕選單明確選擇建立。
-  - QProcess 使用參數陣列與 35 秒上限，等待時保持 Qt 事件處理。建立前保存隨機名稱，建立後保存 tagID／serial／model／vendor 指紋；重試時驗證身分，只設定自建螢幕。定義與連線跨 FShot 退出保留，不使用全域 discard／disconnect。
+  - 使用 BetterDisplay CLI 自動建立／連接固定名稱 FShot-4K 的 1920 × 1080 HiDPI（3840 × 2160 pixels）螢幕，首次可採用同名既有 VirtualScreen 定義。
+  - QProcess 使用參數陣列與 35 秒上限，等待時保持 Qt 事件處理。建立前保存固定名稱，建立後保存 tagID／serial／model／vendor 指紋；重試時驗證身分，不設定其他名稱的螢幕。定義與連線跨 FShot 退出保留，不使用全域 discard／disconnect。
+
+- `platforms/macos_virtual_install.py`
+  - 偵測 BetterDisplay bundle／CLI；缺少時詢問是否使用 brew，缺少 brew 再另行詢問官方 Homebrew 安裝。拒絕不啟動安裝；已存在有效 FShot-4K 時略過安裝檢查與詢問。
+  - 搜尋 PATH、標準 prefix 與使用者 homebrew prefix，支援 Finder 啟動的環境。經同意後由 Terminal 執行官方 Homebrew installer 或 brew cask install；不以 root 執行 brew、不收集密碼。私有暫存 shell wrapper 記錄 exit status，Qt event loop 輪詢完成，成功再驗證安裝存在；30 分鐘逾時不接續建立，提醒 Terminal 程序可能仍在運行。
+
+- `platforms/macos_interactive.py`
+  - 僅虛擬作用中視窗且延遲大於 0 時啟用。ScreenCaptureKit 的 30 fps stream 在 libdispatch serial queue 回呼，CVPixelBuffer 鎖定期間複製為 QImage；跳過非完整 frame，信箱只保留最新影像，Qt queued signal 更新非啟用預覽。首張畫面就緒後才開始倒數。
+  - 背景 Quartz event tap 攔截預覽內的滑鼠與 Esc；以顯示後的預覽全域 points 邊界映射實體游標絕對位置，保留原事件 flags／滾輪／點擊資料。由 `GetProcessForPID` 解析原生程序佇列，再以 `CGEventPostToPSN` 派送視窗綁定事件；保留實體游標移動事件，不 warp 全域游標。離開預覽停止轉送，拖曳維持捕捉至放開。鍵盤其他事件不攔截，焦點保留目標程式。點擊紀錄包含映射座標、命中視窗與派送進度；API 無接收確認，實際處理仍需手動驗收。
+  - 每 200ms 驗證目標及焦點，每秒檢查螢幕配置，最終擷取前再檢查。倒數到期先停止 timer（避免原生等待重新進入 final capture）、凍結滑鼠輸入及停止 stream，再擷取原生像素與可辨識的新 popup 聯集。
+  - finally 關閉 stream、停用／invalidate event tap、釋放按鍵；外層 moved_window 還原視窗。Qt 預覽位於實體螢幕，與擷取螢幕分離。最終游標以映射位置與 HiDPI 比例合成至輸出，實際游標不搬移。
+  - 合成事件使用獨立 private source，關閉本機輸入抑制並允許滑鼠／鍵盤／系統事件；轉送後的 delta 與縮放後座標一致。焦點恢復使用獨立的 NSRunningApplication 參照，不覆蓋 QApplication；退出訊號的解除連接置於輸入清理之後。
+  - 指定程序事件需先以 NSEvent mouse factory 綁定真正的 `windowNumber` 再轉成 CGEvent；只改 Quartz hit-test annotation 仍會得到 windowNumber=0。轉送前驗證目標視窗編號，保留點擊次數、按鍵、修飾鍵及滾輪 delta／phase；macOS 原生記憶體 roundtrip 測試驗證此差異，不發送測試事件。
+  - `CGEventSetLocation` 不會更新獨立儲存的視窗內座標，factory 事件可能保留 `(-1,-1)`。派送前重新驗證同 PID 的 CGWindowID 與即時邊界，使用未公開 `CGEventSetWindowLocation` 補上相對視窗左上角的 points，並由 `CGEventGetWindowLocation` 讀回驗證。符號檢查於攔截輸入前執行，不支援時明確中止；此實驗路徑有 macOS 版本相容性風險。
 
 - `virtual_screen.py`
   - 延遲操作預覽使用獨立背景執行緒及其專屬 MSS context，直接將 BGRA 轉為 QImage 並縮小至預覽像素尺寸；有鎖的單張信箱只保留最新影像，並以最多一個待處理的 queued signal 通知介面更新，避免累積舊畫面及額外輪詢等待。滑鼠移動以 4ms precise timer 合併轉送，按鍵／滾輪在下一輪事件迴圈處理；游標只更新新舊位置附近區域，預覽繪圖略過未變更的標題。目標邊界每 200ms、螢幕配置每秒及最終擷取前驗證。輸出前停止背景預覽，再由原擷取流程取得完整解析度。

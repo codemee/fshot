@@ -43,7 +43,7 @@ def _controller(qt_app, tmp_path, monkeypatch):
 def test_tray_exposes_update_controls(qt_app, tmp_path, monkeypatch):
     controller, _updater = _controller(qt_app, tmp_path, monkeypatch)
 
-    assert controller.check_updates_action in controller.tray.contextMenu().actions()
+    assert controller.check_updates_action in controller.tray_menu.actions()
     assert controller.automatic_updates_action.isCheckable()
     assert controller.automatic_updates_action.isChecked()
 

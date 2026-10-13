@@ -78,6 +78,7 @@ def test_capture_session_restores_window_and_only_remembers_success(monkeypatch,
     monkeypatch.setattr(virtual, "validate_window", lambda target: None)
     monkeypatch.setattr(virtual, "target_bounds", lambda target: frame[0])
     monkeypatch.setattr(virtual, "wait_for_bounds", lambda *args: None)
+    monkeypatch.setattr(virtual, "raise_window", lambda target: None)
     monkeypatch.setattr(virtual.macos, "_window_target_at_point", lambda *args: (None, 456, 123))
 
     def place(target, rect):
@@ -96,9 +97,9 @@ def test_capture_session_restores_window_and_only_remembers_success(monkeypatch,
     session = virtual.VirtualCaptureSession()
     if outcome == "error":
         with pytest.raises(RuntimeError, match="capture failed"):
-            session.capture(service, CaptureMode.ACTIVE_WINDOW, settings, lambda key: key, TARGET)
+            session.capture(service, CaptureMode.WINDOW_UNDER_CURSOR, settings, lambda key: key, TARGET)
     else:
-        result = session.capture(service, CaptureMode.ACTIVE_WINDOW, settings, lambda key: key, TARGET)
+        result = session.capture(service, CaptureMode.WINDOW_UNDER_CURSOR, settings, lambda key: key, TARGET)
         assert (result is not None) == (outcome == "success")
     assert moves[-1] == ORIGINAL
     assert (session.last is not None) == (outcome == "success")

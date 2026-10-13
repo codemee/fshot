@@ -34,7 +34,7 @@ def test_cli_parses_comma_separated_objects_and_arrays():
 
 def test_provisioning_creates_once_and_only_reconfigures_owned_screen(qt_app, monkeypatch):
     settings = Settings()
-    user_screen = {"name": "FShot-4K", "deviceType": "VirtualScreen", "tagID": "3",
+    user_screen = {"name": "Other-4K", "deviceType": "VirtualScreen", "tagID": "3",
                    "serial": "user-serial", "vendor": "2198", "model": "55"}
     entries = [user_screen]
     commands = []
@@ -59,6 +59,7 @@ def test_provisioning_creates_once_and_only_reconfigures_owned_screen(qt_app, mo
     assert display.identifier == "new-uuid"
     setup.ensure_display(None, settings, lambda key: key)
     assert len([args for args in commands if args[0] == "create"]) == 1
+    assert settings.value(setup.NAME_KEY) == setup.DISPLAY_NAME
     mutations = [args for args in commands if args[0] == "set"]
     assert all("--tagID=4" in args for args in mutations)
     assert user_screen == entries[0]
@@ -67,10 +68,10 @@ def test_provisioning_creates_once_and_only_reconfigures_owned_screen(qt_app, mo
 
 def test_changed_managed_identity_refuses_all_mutations(monkeypatch):
     settings = Settings()
-    settings.setValue(setup.NAME_KEY, "FShot-owned")
+    settings.setValue(setup.NAME_KEY, setup.DISPLAY_NAME)
     original = {"tagID": "4", "serial": "old", "vendor": "2198", "model": "77"}
     settings.setValue(setup.IDENTITY_KEY, json.dumps(original))
-    changed = dict(original, serial="different", name="FShot-owned", deviceType="VirtualScreen")
+    changed = dict(original, serial="different", name=setup.DISPLAY_NAME, deviceType="VirtualScreen")
     commands = []
     monkeypatch.setattr(setup, "cli_path", lambda: "/mock/betterdisplaycli")
     monkeypatch.setattr(setup, "run_cli", lambda parent, args, **kwargs:

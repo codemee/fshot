@@ -394,7 +394,8 @@ class FShotApplication(QObject):
     def _build_tray(self) -> QSystemTrayIcon:
         tray = QSystemTrayIcon(tray_icon(macos=sys.platform == "darwin"), self.app)
         tray.setToolTip("FShot")
-        menu = QMenu()
+        menu = QMenu(self.window)
+        self.tray_menu = menu
         self.check_updates_action = QAction(self.language_manager.text("check_updates"), menu)
         self.check_updates_action.triggered.connect(
             lambda _checked=False: self.update_manager.start_check(manual=True)
@@ -411,7 +412,11 @@ class FShotApplication(QObject):
         self.exit_action = QAction(self.language_manager.text("exit"), menu)
         self.exit_action.triggered.connect(self.quit)
         menu.addAction(self.exit_action)
-        tray.setContextMenu(menu)
+        # Cocoa's attached NSMenu opens on the first mouse-down and prevents
+        # reliable DoubleClick delivery. Show it only for an explicit right
+        # click on macOS; keep the native tray menu elsewhere.
+        if sys.platform != "darwin":
+            tray.setContextMenu(menu)
         tray.activated.connect(self._tray_activated)
         return tray
 
@@ -586,6 +591,8 @@ class FShotApplication(QObject):
     def _tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
         if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
             self.show_window()
+        elif sys.platform == "darwin" and reason == QSystemTrayIcon.ActivationReason.Context:
+            self.tray_menu.popup(QCursor.pos())
 
     def _register_hotkeys(self, bindings=None, show_warning: bool = True) -> bool:
         bindings = bindings or self.hotkeys

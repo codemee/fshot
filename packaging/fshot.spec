@@ -13,7 +13,7 @@ hidden_imports = []
 if sys.platform == "win32":
     hidden_imports.append("comtypes.gen.UIAutomationClient")
 elif sys.platform == "darwin":
-    hidden_imports.extend(["AppKit", "ApplicationServices", "Quartz", "ScreenCaptureKit"])
+    hidden_imports.extend(["AppKit", "ApplicationServices", "Quartz", "ScreenCaptureKit", "CoreMedia", "libdispatch"])
 
 analysis = Analysis(
     [str(ROOT / "src" / "fshot" / "__main__.py")],
