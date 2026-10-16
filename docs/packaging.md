@@ -2,6 +2,8 @@
 
 FShot uses PyInstaller for desktop packages. Builds must run on the target operating system.
 
+The installed `fshot` command uses a console entry point (`project.scripts`) so it inherits the invoking terminal. Desktop packages use PyInstaller's windowed launcher.
+
 ## Local build
 
 ```powershell

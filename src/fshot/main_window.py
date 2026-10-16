@@ -504,6 +504,8 @@ class EditorWindow(QMainWindow):
         toolbar.setMovable(False)
         toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         toolbar.setIconSize(TOOLBAR_ICON_SIZE)
+        # Reserve 4 px above and below the fixed-size button backgrounds.
+        toolbar.setMinimumHeight(TOOLBAR_BUTTON_SIZE.height() + 8)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
         self.tool_group = QActionGroup(self)
         self.tool_group.setExclusive(True)

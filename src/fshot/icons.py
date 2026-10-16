@@ -334,34 +334,19 @@ def tool_icon(
         painter.drawRoundedRect(10, 21, 12, 2, 0.6, 0.6)
     elif name == "theme":
         if badge == "system":
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.setPen(QPen(base_ink, 1.2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-            painter.drawEllipse(6, 5, 8, 8)
-            for start, end in (
-                ((10, 2), (10, 4)),
-                ((10, 14), (10, 16)),
-                ((3, 9), (5, 9)),
-                ((15, 9), (17, 9)),
-                ((5, 4), (6, 5)),
-                ((14, 13), (15, 14)),
-            ):
-                painter.drawLine(*start, *end)
+            painter.drawEllipse(5, 5, 22, 22)
+            half = QPainterPath()
+            half.moveTo(16, 5)
+            half.arcTo(5, 5, 22, 22, 90, 180)
+            half.closeSubpath()
             painter.setBrush(base_ink)
             painter.setPen(Qt.PenStyle.NoPen)
-            moon = QPainterPath()
-            moon.addEllipse(18, 18, 10, 11)
-            cutout = QPainterPath()
-            cutout.addEllipse(22, 16, 9, 10)
-            painter.drawPath(moon.subtracted(cutout))
-            painter.setPen(QPen(base_ink, 1.35, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-            painter.drawLine(7, 25, 25, 7)
+            painter.drawPath(half)
         elif badge == "dark":
-            painter.setBrush(base_ink)
-            painter.setPen(Qt.PenStyle.NoPen)
             moon = QPainterPath()
-            moon.addEllipse(7, 6, 19, 20)
+            moon.addEllipse(6, 5, 21, 22)
             cutout = QPainterPath()
-            cutout.addEllipse(13, 3, 17, 18)
+            cutout.addEllipse(12, 2, 20, 20)
             painter.drawPath(moon.subtracted(cutout))
         else:
             painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -379,21 +364,18 @@ def tool_icon(
             ):
                 painter.drawLine(*start, *end)
     elif name == "language":
-        painter.setPen(base_ink)
-        font = painter.font()
-        font.setBold(True)
         if badge == "system":
-            font.setPointSize(8)
-            painter.setFont(font)
-            painter.drawText(QRect(2, 2, 16, 15), Qt.AlignmentFlag.AlignCenter, "文")
-            painter.drawText(QRect(15, 15, 15, 15), Qt.AlignmentFlag.AlignCenter, "A")
-            painter.setPen(QPen(base_ink, 1.25, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-            painter.drawLine(8, 25, 25, 8)
+            painter.drawEllipse(5, 5, 22, 22)
+            painter.drawEllipse(11, 5, 10, 22)
+            painter.drawLine(5, 16, 27, 16)
         else:
-            font.setPointSize(11 if badge == "zh_TW" else 10)
+            painter.setPen(base_ink)
+            font = painter.font()
+            font.setBold(False)
+            font.setPixelSize(22)
             painter.setFont(font)
-            label = "中" if badge == "zh_TW" else "En"
-            painter.drawText(QRect(1, 3, 30, 26), Qt.AlignmentFlag.AlignCenter, label)
+            label = "中" if badge == "zh_TW" else "A"
+            painter.drawText(QRect(0, 0, 32, 32), Qt.AlignmentFlag.AlignCenter, label)
 
     painter.end()
     icon = QIcon()
