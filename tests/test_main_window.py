@@ -64,6 +64,46 @@ def test_editor_toolbar_uses_compact_buttons(qt_app):
     assert actions.index(window.resize_image_action) < actions.index(window.style_action)
 
 
+def test_selected_tool_applies_when_switching_tabs(qt_app):
+    from fshot.main_window import EditorWindow
+    from fshot.settings import Tool
+
+    window = EditorWindow()
+    image = QImage(80, 60, QImage.Format.Format_ARGB32)
+    image.fill(Qt.GlobalColor.white)
+    window._add_image(image, "first.png")
+    first = window._current_canvas()
+    window._add_image(image, "second.png")
+    second = window._current_canvas()
+
+    window.measure_action.trigger()
+    window.tabs.setCurrentIndex(0)
+    qt_app.processEvents()
+
+    start = QPoint(CANVAS_PADDING + 10, CANVAS_PADDING + 12)
+    end = QPoint(CANVAS_PADDING + 43, CANVAS_PADDING + 37)
+    QTest.mousePress(first, Qt.MouseButton.LeftButton, pos=start)
+    QTest.mouseMove(first, end)
+    QTest.mouseRelease(first, Qt.MouseButton.LeftButton, pos=end)
+
+    assert window.measure_action.isChecked()
+    assert first.measurement == (33, 25)
+    assert first.image == image
+    assert not first.can_undo
+
+    window.rect_action.trigger()
+    window.tabs.setCurrentIndex(1)
+
+    assert window.rect_action.isChecked()
+    assert second.tool is Tool.RECTANGLE
+
+    window.tabs.setCurrentIndex(0)
+    assert first.tool is Tool.RECTANGLE
+    assert first.measurement is None
+    window._discard_all_tabs()
+    window.hide()
+
+
 def test_image_transform_actions_modify_current_canvas(qt_app):
     from fshot.main_window import ArrowSpinBox, EditorWindow
 

@@ -505,7 +505,7 @@ class EditorWindow(QMainWindow):
         toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         toolbar.setIconSize(TOOLBAR_ICON_SIZE)
         # Reserve 4 px above and below the fixed-size button backgrounds.
-        toolbar.setMinimumHeight(TOOLBAR_BUTTON_SIZE.height() + 8)
+        toolbar.setFixedHeight(TOOLBAR_BUTTON_SIZE.height() + 8)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
         self.tool_group = QActionGroup(self)
         self.tool_group.setExclusive(True)
@@ -1271,6 +1271,9 @@ class EditorWindow(QMainWindow):
     def _current_changed(self, _index: int) -> None:
         if self._rename_tab_index is not None and self._rename_tab_index != _index:
             self._cancel_tab_rename()
+        canvas = self._current_canvas()
+        if canvas is not None:
+            canvas.set_tool(self.active_tool)
         self._update_title()
         self._update_actions()
 

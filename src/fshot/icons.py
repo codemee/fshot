@@ -4,8 +4,11 @@ from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPicture, QPolygon, QPixmap
 
 
-INK = QColor("#5c6269")
-DARK_INK = QColor("#c7cbd1")
+INK = QColor("#202124")
+DARK_INK = QColor("#e8eaed")
+CAMERA_INK = QColor("#5c6269")
+# Icons use a 32 px drawing grid; 1.6 becomes a 1 px stroke at toolbar size.
+TOOL_STROKE_WIDTH = 1.6
 BLUE = QColor("#1971c2")
 GREEN = QColor("#2f9e44")
 RED = QColor("#e03131")
@@ -32,7 +35,7 @@ def _camera_pixmap(size: int, tray: bool, macos: bool = False) -> QPixmap:
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = _painter(pixmap)
     scale = size / 64
-    painter.setBrush(INK)
+    painter.setBrush(CAMERA_INK)
     painter.setPen(Qt.PenStyle.NoPen)
     if tray and macos:
         # macOS menu-bar slots are shorter than Windows tray slots. Use a
@@ -79,7 +82,7 @@ def tool_icon(
     painter = _painter(picture)
     base_ink = DARK_INK if dark else INK
     ink = color or base_ink
-    icon_width = 1.45 if name != "style" else max(1.3, min(5.0, width * 0.45))
+    icon_width = TOOL_STROKE_WIDTH if name != "style" else max(1.3, min(5.0, width * 0.45))
     pen = QPen(ink, icon_width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     painter.setPen(pen)
     painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -97,7 +100,7 @@ def tool_icon(
         # other toolbar glyphs, so align its visual center with its peers.
         painter.save()
         painter.translate(0, -4)
-        painter.setPen(QPen(base_ink, 1.2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawPolygon(QPolygon([QPoint(8, 24), QPoint(12, 28), QPoint(25, 15), QPoint(21, 11)]))
         painter.drawLine(19, 13, 23, 17)
@@ -122,7 +125,7 @@ def tool_icon(
         painter.setPen(
             QPen(
                 base_ink,
-                1.35,
+                TOOL_STROKE_WIDTH,
                 Qt.PenStyle.SolidLine,
                 Qt.PenCapStyle.RoundCap,
                 Qt.PenJoinStyle.RoundJoin,
@@ -148,7 +151,7 @@ def tool_icon(
         painter.drawLine(8, 8, 24, 8)
         painter.drawLine(16, 8, 16, 25)
     elif name == "mosaic":
-        painter.setPen(QPen(INK, 0.9))
+        painter.setPen(QPen(base_ink, 0.9))
         for y in (8, 15, 22):
             for x in (7, 14, 21):
                 painter.fillRect(x, y, 5, 5, QColor("#9aa0a6") if dark and (x + y) % 2 else QColor("#495057") if (x + y) % 2 else QColor("#adb5bd"))
@@ -158,7 +161,7 @@ def tool_icon(
         painter.setBrush(ink)
         painter.drawEllipse(20, 20, 7, 7)
     elif name == "undo":
-        painter.setPen(QPen(base_ink, 1.45, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         path = QPainterPath(QPoint(12, 12))
         path.cubicTo(17, 8, 25, 10, 26, 17)
         path.cubicTo(27, 24, 18, 28, 11, 23)
@@ -170,7 +173,7 @@ def tool_icon(
         painter.setPen(
             QPen(
                 base_ink,
-                1.35,
+                TOOL_STROKE_WIDTH,
                 Qt.PenStyle.SolidLine,
                 Qt.PenCapStyle.RoundCap,
                 Qt.PenJoinStyle.RoundJoin,
@@ -205,7 +208,7 @@ def tool_icon(
         painter.setPen(
             QPen(
                 base_ink,
-                1.35,
+                TOOL_STROKE_WIDTH,
                 Qt.PenStyle.SolidLine,
                 Qt.PenCapStyle.RoundCap,
                 Qt.PenJoinStyle.RoundJoin,
@@ -219,7 +222,7 @@ def tool_icon(
         painter.setPen(
             QPen(
                 base_ink,
-                1.35,
+                TOOL_STROKE_WIDTH,
                 Qt.PenStyle.SolidLine,
                 Qt.PenCapStyle.RoundCap,
                 Qt.PenJoinStyle.RoundJoin,
@@ -235,7 +238,7 @@ def tool_icon(
         painter.setPen(
             QPen(
                 base_ink,
-                1.5,
+                TOOL_STROKE_WIDTH,
                 Qt.PenStyle.SolidLine,
                 Qt.PenCapStyle.RoundCap,
                 Qt.PenJoinStyle.RoundJoin,
@@ -248,7 +251,7 @@ def tool_icon(
         painter.drawRoundedRect(11, 7, 13, 16, 2, 2)
         painter.drawRoundedRect(7, 11, 13, 16, 2, 2)
     elif name == "save":
-        painter.setPen(QPen(base_ink, 1.35, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         painter.drawRoundedRect(7, 6, 18, 20, 2, 2)
         painter.drawLine(10, 6, 22, 6)
         painter.drawLine(22, 6, 25, 9)
@@ -257,7 +260,7 @@ def tool_icon(
         painter.drawRoundedRect(11, 18, 10, 6, 1, 1)
         painter.drawLine(13, 21, 19, 21)
     elif name == "save_as":
-        painter.setPen(QPen(base_ink, 1.25, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRoundedRect(9, 5, 15, 17, 2, 2)
         painter.drawLine(12, 5, 21, 5)
@@ -268,7 +271,7 @@ def tool_icon(
         painter.setBrush(QColor("#252629") if dark else QColor("#ffffff"))
         painter.drawRoundedRect(5, 9, 17, 19, 3, 3)
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.setPen(QPen(base_ink, 1.25, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         painter.drawRoundedRect(6, 10, 15, 17, 2, 2)
         painter.drawLine(9, 10, 18, 10)
         painter.drawLine(18, 10, 21, 13)
@@ -288,7 +291,7 @@ def tool_icon(
         path.lineTo(13, 27)
         path.lineTo(9, 6)
         painter.setBrush(BLUE if checked else QColor("#252629") if dark else QColor("#ffffff"))
-        painter.setPen(QPen(base_ink, 1.35))
+        painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH))
         painter.drawPath(path)
         if checked:
             check_pen = QPen(GREEN, 1.8)
@@ -319,7 +322,7 @@ def tool_icon(
         painter.setPen(
             QPen(
                 base_ink,
-                1.3,
+                TOOL_STROKE_WIDTH,
                 Qt.PenStyle.SolidLine,
                 Qt.PenCapStyle.RoundCap,
                 Qt.PenJoinStyle.RoundJoin,
@@ -350,7 +353,7 @@ def tool_icon(
             painter.drawPath(moon.subtracted(cutout))
         else:
             painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.setPen(QPen(base_ink, 1.35, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+            painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
             painter.drawEllipse(11, 11, 10, 10)
             for start, end in (
                 ((16, 5), (16, 8)),
