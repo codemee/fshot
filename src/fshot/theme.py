@@ -99,6 +99,7 @@ def _stylesheet(mode: ThemeMode) -> str:
         return """
             QMainWindow { background: #202124; }
             QToolBar { background: #252629; border: 0; border-bottom: 1px solid #3c4043; spacing: 4px; }
+            QToolBar::separator { background: #3c4043; width: 1px; margin: 11px 2px; }
             QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
             QToolBar QToolButton { padding: 4px; }
             QToolBar QToolButton[lineToolMain="true"] { border-top-right-radius: 0; border-bottom-right-radius: 0; }
@@ -193,6 +194,7 @@ def _stylesheet(mode: ThemeMode) -> str:
     return """
         QMainWindow { background: #f8f9fa; }
         QToolBar { background: #ffffff; border: 0; border-bottom: 1px solid #dee2e6; spacing: 4px; }
+        QToolBar::separator { background: #dee2e6; width: 1px; margin: 11px 2px; }
         QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
         QToolBar QToolButton { padding: 4px; }
         QToolBar QToolButton[lineToolMain="true"] { border-top-right-radius: 0; border-bottom-right-radius: 0; }
