@@ -77,6 +77,37 @@ TOOLBAR_DROPDOWN_SIZE = QSize(20, 34)
 LINE_END_STYLE_ICON_SIZE = QSize(64, 24)
 
 
+class EditorToolBar(QToolBar):
+    """Use a popup for overflow while keeping the toolbar height fixed."""
+
+    def configure_overflow(self, populate: Callable[[QMenu], None]) -> None:
+        self.overflow_menu = QMenu(self)
+        self.overflow_menu.setObjectName("toolbarOverflowMenu")
+        self.overflow_menu.aboutToShow.connect(lambda: populate(self.overflow_menu))
+        extension = self.findChild(QToolButton, "qt_toolbar_ext_button")
+        extension.setMenu(self.overflow_menu)
+        extension.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        extension.setFixedHeight(TOOLBAR_BUTTON_SIZE.height())
+        extension.installEventFilter(self)
+
+    def eventFilter(self, watched, event) -> bool:
+        if event.type() in (QEvent.Type.MouseButtonPress, QEvent.Type.KeyPress):
+            # QToolBarLayout resets the extension's menu when it relayouts.
+            # Restore our popup before QToolButton handles the input event.
+            watched.setMenu(self.overflow_menu)
+            watched.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        return super().eventFilter(watched, event)
+
+    def event(self, event) -> bool:
+        result = super().event(event)
+        if event.type() in (QEvent.Type.Resize, QEvent.Type.LayoutRequest, QEvent.Type.Show):
+            extension = self.findChild(QToolButton, "qt_toolbar_ext_button")
+            if extension is not None:
+                extension.move(self.width() - extension.width() - 4,
+                               (self.height() - extension.height()) // 2)
+        return result
+
+
 class LineEndStyleDelegate(QStyledItemDelegate):
     """Draw full-size line previews in combo popups on every platform."""
 
@@ -284,6 +315,7 @@ class EditorWindow(QMainWindow):
         self.tab_menu_button.setMenu(self.tab_menu)
         self.tab_menu_button.hide()
         self.tabs.setCornerWidget(self.tab_menu_button, Qt.Corner.TopRightCorner)
+        self._build_tab_shortcuts()
         self._build_toolbar()
         self.theme_manager.changed.connect(self._theme_changed)
         self.language_manager.changed.connect(self._language_changed)
@@ -291,6 +323,41 @@ class EditorWindow(QMainWindow):
         self._update_title()
         self._update_actions()
         self.resize(1100, 760)
+
+    def _build_tab_shortcuts(self) -> None:
+        self.next_tab_action = QAction(self)
+        self.next_tab_action.setShortcuts(
+            QKeySequence.keyBindings(QKeySequence.StandardKey.NextChild)
+            + [QKeySequence("Ctrl+PgDown")]
+        )
+        self.next_tab_action.triggered.connect(lambda: self._cycle_tab(1))
+        self.previous_tab_action = QAction(self)
+        self.previous_tab_action.setShortcuts(
+            QKeySequence.keyBindings(QKeySequence.StandardKey.PreviousChild)
+            + [QKeySequence("Ctrl+PgUp")]
+        )
+        self.previous_tab_action.triggered.connect(lambda: self._cycle_tab(-1))
+        self.close_tab_action = QAction(self)
+        self.close_tab_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.StandardKey.Close))
+        self.close_tab_action.triggered.connect(lambda: self._close_tab(self.tabs.currentIndex()))
+        self.addActions([self.next_tab_action, self.previous_tab_action, self.close_tab_action])
+        self.numbered_tab_actions = []
+        for number in range(1, 10):
+            action = QAction(self)
+            action.setShortcut(QKeySequence(f"Ctrl+{number}"))
+            action.triggered.connect(lambda _checked=False, number=number: self._select_tab_number(number))
+            self.addAction(action)
+            self.numbered_tab_actions.append(action)
+
+    def _cycle_tab(self, offset: int) -> None:
+        count = self.tabs.count()
+        if count:
+            self.tabs.setCurrentIndex((self.tabs.currentIndex() + offset) % count)
+
+    def _select_tab_number(self, number: int) -> None:
+        index = self.tabs.count() - 1 if number == 9 else number - 1
+        if 0 <= index < self.tabs.count():
+            self.tabs.setCurrentIndex(index)
 
     def add_shot(self, image: Image.Image) -> None:
         self._add_image(pil_to_qimage(image), make_tab_title())
@@ -499,7 +566,7 @@ class EditorWindow(QMainWindow):
         self._update_tab_overflow()
 
     def _build_toolbar(self) -> None:
-        toolbar = QToolBar("Tools")
+        toolbar = EditorToolBar("Tools")
         toolbar.setObjectName("editorToolbar")
         toolbar.setMovable(False)
         toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
@@ -663,7 +730,29 @@ class EditorWindow(QMainWindow):
             TOOLBAR_BUTTON_SIZE.width() + TOOLBAR_DROPDOWN_SIZE.width(),
             TOOLBAR_BUTTON_SIZE.height(),
         )
+        toolbar.configure_overflow(lambda menu: self._populate_toolbar_overflow(toolbar, menu))
         self._refresh_toolbar_icons()
+
+    def _populate_toolbar_overflow(self, toolbar: QToolBar, menu: QMenu) -> None:
+        menu.clear()
+        separator_pending = False
+        for action in toolbar.actions():
+            if action.isSeparator():
+                separator_pending = bool(menu.actions())
+                continue
+            widget = toolbar.widgetForAction(action)
+            if not action.isVisible() or widget is None or widget.isVisible():
+                continue
+            if separator_pending:
+                menu.addSeparator()
+                separator_pending = False
+            if widget is self.line_tool_group:
+                # QWidgetAction's single widget cannot also be shown in a menu.
+                menu.addAction(self.line_action)
+                self.line_end_menu.setTitle(self.line_end_button.toolTip())
+                menu.addMenu(self.line_end_menu)
+            else:
+                menu.addAction(action)
 
     def _tool_action(self, text: str, shortcut: str, tool: Tool, icon_name: str) -> QAction:
         action = QAction(tool_icon(icon_name), text, self)
@@ -1404,6 +1493,7 @@ class EditorWindow(QMainWindow):
 
     def _style_tab_close_button(self, button: QAbstractButton) -> None:
         button.setIcon(self._tab_close_icon())
+        button.setToolTip(self._tooltip_with_shortcuts(self._tr("close_tab"), self.close_tab_action))
         button.setIconSize(QSize(11, 11))
 
     def _tab_close_icon(self) -> QIcon:
@@ -1450,6 +1540,11 @@ class EditorWindow(QMainWindow):
         self.zoom_in_action.setEnabled(has_doc)
         self.zoom_out_action.setEnabled(has_doc)
         self.zoom_reset_action.setEnabled(has_doc)
+        self.close_tab_action.setEnabled(has_doc)
+        self.next_tab_action.setEnabled(self.tabs.count() > 1)
+        self.previous_tab_action.setEnabled(self.tabs.count() > 1)
+        for number, action in enumerate(self.numbered_tab_actions, start=1):
+            action.setEnabled(self.tabs.count() > 0 if number == 9 else number <= self.tabs.count())
 
     def _has_dirty_documents(self) -> bool:
         return any(doc.is_dirty for doc in self.documents.values())
@@ -1524,9 +1619,16 @@ class EditorWindow(QMainWindow):
             (self.zoom_reset_action, "reset_zoom"),
             (self.delay_action, "delay"),
             (self.hotkey_action, "capture_shortcuts"),
+            (self.next_tab_action, "next_tab"),
+            (self.previous_tab_action, "previous_tab"),
+            (self.close_tab_action, "close_tab"),
         )
         for action, key in labels:
             label = self._tr(key)
+            action.setText(label)
+            action.setToolTip(self._tooltip_with_shortcuts(label, action))
+        for number, action in enumerate(self.numbered_tab_actions, start=1):
+            label = self._tr("last_tab") if number == 9 else self._tr("select_tab", number=number)
             action.setText(label)
             action.setToolTip(self._tooltip_with_shortcuts(label, action))
         self.line_end_button.setToolTip(self._tr("line_end_settings"))
@@ -1595,6 +1697,8 @@ class EditorWindow(QMainWindow):
         for toolbar in self.findChildren(QToolBar):
             widget = toolbar.widgetForAction(action)
             if widget:
+                if not widget.isVisible():
+                    widget = toolbar.findChild(QToolButton, "qt_toolbar_ext_button") or widget
                 point = widget.mapTo(self, widget.rect().bottomLeft())
                 return point
         return QPoint(0, 0)

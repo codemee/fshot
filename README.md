@@ -262,6 +262,20 @@ macOS 使用相同的 <kbd>Ctrl</kbd>+<kbd>Shift</kbd> 字母組合。獨立 App
 
 已存檔的標籤頁也可直接雙擊名稱進入重新命名；副檔名會保留不變。
 
+### 標籤頁快捷鍵
+
+以下為 Windows／Linux 的操作，僅在編輯視窗內生效：
+
+| 快捷鍵 | 操作 |
+| --- | --- |
+| <kbd>Ctrl</kbd>+<kbd>Tab</kbd>／<kbd>Ctrl</kbd>+<kbd>Page Down</kbd> | 下一個頁籤，到最後一頁後回到第一頁 |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd>／<kbd>Ctrl</kbd>+<kbd>Page Up</kbd> | 上一個頁籤，到第一頁後回到最後一頁 |
+| <kbd>Ctrl</kbd>+<kbd>1</kbd>–<kbd>8</kbd> | 依左至右順序切換到第 1–8 個頁籤 |
+| <kbd>Ctrl</kbd>+<kbd>9</kbd> | 最後一個頁籤 |
+| <kbd>Ctrl</kbd>+<kbd>W</kbd>／<kbd>Ctrl</kbd>+<kbd>F4</kbd> | 關閉目前頁籤；未儲存時先要求確認 |
+
+macOS 的關閉與數字選頁使用 <kbd>⌘</kbd> 組合鍵，上一頁／下一頁沿用 Qt 平台標準快捷鍵。關閉最後一個頁籤後，編輯視窗仍保持開啟。
+
 ## Project Docs
 
 - [PRD](https://github.com/codemee/fshot/blob/main/PRD.md): 原始產品需求。

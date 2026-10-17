@@ -121,6 +121,20 @@ The leading editor-tool group can also rotate the current image 90° clockwise o
 
 You can also double-click the name of a saved tab to rename it. The original file extension is preserved.
 
+### Tab shortcuts
+
+These Windows/Linux shortcuts work within the editor window:
+
+| Shortcut | Action |
+| --- | --- |
+| <kbd>Ctrl</kbd>+<kbd>Tab</kbd> / <kbd>Ctrl</kbd>+<kbd>Page Down</kbd> | Next tab, wrapping to the first |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd> / <kbd>Ctrl</kbd>+<kbd>Page Up</kbd> | Previous tab, wrapping to the last |
+| <kbd>Ctrl</kbd>+<kbd>1</kbd>–<kbd>8</kbd> | Select the first through eighth tab from the left |
+| <kbd>Ctrl</kbd>+<kbd>9</kbd> | Select the last tab |
+| <kbd>Ctrl</kbd>+<kbd>W</kbd> / <kbd>Ctrl</kbd>+<kbd>F4</kbd> | Close the current tab, confirming unsaved changes first |
+
+On macOS, closing and numbered selection use <kbd>⌘</kbd>; previous/next use Qt's platform-standard bindings. Closing the last tab leaves the editor window open.
+
 ## Project Docs
 
 - [PRD](https://github.com/codemee/fshot/blob/main/PRD.en.md): Original product requirements.

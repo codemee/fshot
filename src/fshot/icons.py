@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QPoint, QRect, Qt
-from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPicture, QPolygon, QPixmap
+import math
+
+from PySide6.QtCore import QLineF, QPoint, QPointF, QRect, QRectF, Qt
+from PySide6.QtGui import QColor, QFontInfo, QFontMetrics, QIcon, QImage, QPainter, QPainterPath, QPen, QPolygon, QPolygonF, QPixmap
 
 
 INK = QColor("#202124")
@@ -9,9 +11,58 @@ DARK_INK = QColor("#e8eaed")
 CAMERA_INK = QColor("#5c6269")
 # Icons use a 32 px drawing grid; 1.6 becomes a 1 px stroke at toolbar size.
 TOOL_STROKE_WIDTH = 1.6
+# Most artwork fits 16 px inside the 20 px icon canvas. Dense glyphs use 20 px.
+_COMPLEX_TOOL_ICONS = {"keyboard", "save_as"}
 BLUE = QColor("#1971c2")
 GREEN = QColor("#2f9e44")
 RED = QColor("#e03131")
+
+# Bounds of the artwork's geometry on its drawing grid, excluding empty canvas.
+_TOOL_BOUNDS = {
+    "screen_mode": (5, 5, 22, 21),
+    "pen": (6, 7, 19, 19),
+    "line": (7, 8, 18, 16),
+    "arrow": (7, 8, 17, 17),
+    "rectangle": (7, 8, 18, 16),
+    "measure": (6, 5, 21, 21),
+    "text": (8, 8, 16, 17),
+    "mosaic": (7, 8, 19, 19),
+    "style": (7, 11, 20, 16),
+    "undo": (6, 8, 20, 17),
+    "rotate_clockwise": (4, 5, 25, 25),
+    "flip_horizontal": (5, 5, 22, 22),
+    "flip_vertical": (5, 5, 22, 22),
+    "resize_down": (5, 5, 22, 22),
+    "copy": (7, 7, 17, 20),
+    "save": (7, 6, 18, 20),
+    "save_as": (6, 5, 18, 22),
+    "zoom_in": (8, 8, 18, 18),
+    "zoom_out": (8, 8, 18, 18),
+    "cursor": (9, 6, 14, 21),
+    "delay": (8, 5, 16, 19),
+    "keyboard": (4, 8, 24, 17),
+    "theme": (5, 5, 22, 22),
+    "language": (5, 5, 22, 22),
+}
+
+
+def _tool_bounds(name, checked, badge, line_start, line_end) -> QRectF:
+    bounds = QRectF(*_TOOL_BOUNDS.get(name, (0, 0, 32, 32)))
+    if name == "line":
+        if line_start == "circle":
+            bounds = bounds.united(QRectF(4, 21, 6, 6))
+        if line_end == "circle":
+            bounds = bounds.united(QRectF(22, 5, 6, 6))
+    elif name == "cursor" and checked:
+        bounds = bounds.united(QRectF(20, 19, 10, 10))
+    elif name == "delay":
+        if badge == "off":
+            bounds = bounds.united(QRectF(21, 22, 7, 7))
+        elif badge:
+            bounds = bounds.united(QRectF(19, 19, 12, 12))
+    elif name == "theme" and badge == "dark":
+        bounds = QRectF(6, 5, 21, 22)
+    return bounds
 
 
 def camera_icon(size: int = 64) -> QIcon:
@@ -78,8 +129,37 @@ def tool_icon(
     line_start: str = "none",
     line_end: str = "none",
 ) -> QIcon:
-    picture = QPicture()
-    painter = _painter(picture)
+    icon = QIcon()
+    # Render native pixels for Windows fractional scaling and Retina displays.
+    # Keep a separate 32 px representation for documentation and larger views.
+    for size, dpr in ((20, 1), (25, 1.25), (30, 1.5), (32, 1),
+                      (35, 1.75), (40, 2), (50, 2.5), (60, 3)):
+        pixmap = QPixmap(size, size)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = _ToolbarPainter(pixmap, size / 32,
+                                  _tool_bounds(name, checked, badge, line_start, line_end),
+                                  artwork_size=round(size * (1 if name in _COMPLEX_TOOL_ICONS else 0.8)),
+                                  reserve_stroke=name != "mosaic")
+        try:
+            _draw_tool_icon(painter, name, color, width, checked, badge, dark, line_start, line_end)
+        finally:
+            painter.end()
+        pixmap.setDevicePixelRatio(dpr)
+        icon.addPixmap(pixmap)
+    return icon
+
+
+def _draw_tool_icon(
+    painter: QPainter,
+    name: str,
+    color: QColor | None,
+    width: int,
+    checked: bool,
+    badge: str | None,
+    dark: bool,
+    line_start: str,
+    line_end: str,
+) -> None:
     base_ink = DARK_INK if dark else INK
     ink = color or base_ink
     icon_width = TOOL_STROKE_WIDTH if name != "style" else max(1.3, min(5.0, width * 0.45))
@@ -216,8 +296,7 @@ def tool_icon(
         )
         painter.drawPolygon(QPolygon([QPoint(5, 26), QPoint(13, 26), QPoint(13, 6)]))
         painter.drawPolygon(QPolygon([QPoint(27, 26), QPoint(19, 26), QPoint(19, 6)]))
-        painter.setPen(QPen(base_ink, 1.1, Qt.PenStyle.DashLine))
-        painter.drawLine(16, 5, 16, 27)
+        painter.draw_mirror_axis(vertical=True)
     elif name == "flip_vertical":
         painter.setPen(
             QPen(
@@ -230,8 +309,7 @@ def tool_icon(
         )
         painter.drawPolygon(QPolygon([QPoint(6, 13), QPoint(26, 13), QPoint(6, 5)]))
         painter.drawPolygon(QPolygon([QPoint(6, 19), QPoint(26, 19), QPoint(6, 27)]))
-        painter.setPen(QPen(base_ink, 1.1, Qt.PenStyle.DashLine))
-        painter.drawLine(5, 16, 27, 16)
+        painter.draw_mirror_axis(vertical=False)
     elif name == "resize_down":
         painter.setPen(QPen(base_ink, 1.25, Qt.PenStyle.DashLine))
         painter.drawRect(5, 5, 22, 22)
@@ -373,26 +451,8 @@ def tool_icon(
             painter.drawLine(5, 16, 27, 16)
         else:
             painter.setPen(base_ink)
-            font = painter.font()
-            font.setBold(False)
-            font.setPixelSize(22)
-            painter.setFont(font)
             label = "中" if badge == "zh_TW" else "A"
-            painter.drawText(QRect(0, 0, 32, 32), Qt.AlignmentFlag.AlignCenter, label)
-
-    painter.end()
-    icon = QIcon()
-    for size in (20, 32, 40):
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.GlobalColor.transparent)
-        if size == 40:
-            pixmap.setDevicePixelRatio(2)
-        painter = _painter(pixmap)
-        painter.scale(size / 32, size / 32)
-        painter.drawPicture(0, 0, picture)
-        painter.end()
-        icon.addPixmap(pixmap)
-    return icon
+            painter.draw_label(label)
 
 
 def line_end_style_icon(style: str, endpoint: str, dark: bool = False) -> QIcon:
@@ -444,7 +504,207 @@ def _draw_magnifier(painter: QPainter) -> None:
     painter.drawLine(20, 20, 26, 26)
 
 
-def _painter(device: QPixmap | QPicture) -> QPainter:
+class _ToolbarPainter(QPainter):
+    """Hint icon geometry to physical pixels before rasterizing each size."""
+
+    def __init__(self, pixmap: QPixmap, scale: float, bounds: QRectF, *, artwork_size: int,
+                 reserve_stroke: bool = True) -> None:
+        super().__init__(pixmap)
+        self._stroke_scale = scale
+        self._size = pixmap.width()
+        self._artwork_size = artwork_size
+        margin = (self._size - self._artwork_size) // 2
+        self.setClipRect(QRect(margin, margin, self._artwork_size, self._artwork_size))
+        stroke_pixels = max(1, math.floor(TOOL_STROKE_WIDTH * scale + 0.5)) if reserve_stroke else 0
+        self._scale = (self._artwork_size - stroke_pixels) / max(bounds.width(), bounds.height())
+        self.translate(margin + self._artwork_size / 2, margin + self._artwork_size / 2)
+        self.scale(self._scale, self._scale)
+        self.translate(-bounds.center().x(), -bounds.center().y())
+        self.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+    def setPen(self, pen) -> None:
+        if isinstance(pen, QPen) and pen.style() != Qt.PenStyle.NoPen:
+            pen = QPen(pen)
+            pixels = max(1, math.floor(pen.widthF() * self._stroke_scale + 0.5))
+            pen.setWidthF(pixels / self._scale)
+        super().setPen(pen)
+
+    def _point(self, point: QPointF, *, stroke: bool = True) -> QPointF:
+        transform = self.worldTransform()
+        if abs(transform.m12()) > 1e-6 or abs(transform.m21()) > 1e-6:
+            return point  # Keep intentionally rotated artwork smooth.
+        offset = 0.0
+        if stroke and self.pen().style() != Qt.PenStyle.NoPen:
+            pixels = round(self.pen().widthF() * self._scale)
+            offset = 0.5 if pixels % 2 else 0.0
+        mapped = transform.map(point)
+        mapped.setX(math.floor(mapped.x() - offset + 0.5) + offset)
+        mapped.setY(math.floor(mapped.y() - offset + 0.5) + offset)
+        return mapped
+
+    def _draw_pixels(self, method, *args) -> None:
+        transform = self.worldTransform()
+        if abs(transform.m12()) > 1e-6 or abs(transform.m21()) > 1e-6:
+            method(*args)
+            return
+        # Paint snapped coordinates directly. Mapping them back through the
+        # source grid introduces rounding errors at fractional display scales.
+        self.save()
+        try:
+            pen = QPen(self.pen())
+            pen.setWidthF(pen.widthF() * self._scale)
+            self.resetTransform()
+            super().setPen(pen)
+            method(*args)
+        finally:
+            self.restore()
+
+    def _bounds(self, rect: QRectF, *, stroke: bool = True) -> QRectF:
+        return QRectF(self._point(rect.topLeft(), stroke=stroke),
+                      self._point(rect.bottomRight(), stroke=stroke))
+
+    def drawLine(self, *args) -> None:
+        if len(args) == 2:
+            start, end = (QPointF(point) for point in args)
+        else:
+            start, end = QPointF(args[0], args[1]), QPointF(args[2], args[3])
+        self._draw_pixels(super().drawLine, QLineF(self._point(start), self._point(end)))
+
+    def draw_mirror_axis(self, *, vertical: bool) -> None:
+        # An odd-width stroke snaps half a pixel away from an even-size glyph's
+        # center. Use even-width, symmetric dashes on the physical pixel grid.
+        extent = self._artwork_size
+        margin = (self._size - extent) // 2
+        thickness = max(2, 2 * math.floor(TOOL_STROKE_WIDTH * self._stroke_scale / 2 + 0.5))
+        dash = max(2, 2 * round(extent / 8))
+        cross = margin + (extent - thickness) // 2
+        starts = (margin, margin + (extent - dash) // 2, margin + extent - dash)
+        self.save()
+        try:
+            self.resetTransform()
+            for start in starts:
+                rect = QRect(cross, start, thickness, dash) if vertical else QRect(start, cross, dash, thickness)
+                super().fillRect(rect, self.pen().color())
+        finally:
+            self.restore()
+
+    def drawRect(self, *args) -> None:
+        rect = QRectF(args[0]) if len(args) == 1 else QRectF(*args)
+        self._draw_pixels(super().drawRect, self._bounds(rect))
+
+    def drawRoundedRect(self, *args) -> None:
+        if len(args) == 3:
+            rect, rx, ry = QRectF(args[0]), args[1], args[2]
+        else:
+            rect, rx, ry = QRectF(*args[:4]), args[4], args[5]
+        transform = self.worldTransform()
+        if abs(transform.m12()) <= 1e-6 and abs(transform.m21()) <= 1e-6:
+            rx, ry = rx * self._scale, ry * self._scale
+        self._draw_pixels(super().drawRoundedRect, self._bounds(rect), rx, ry)
+
+    def drawEllipse(self, *args) -> None:
+        if len(args) == 3:
+            center, rx, ry = args
+            rect = QRectF(center.x() - rx, center.y() - ry, rx * 2, ry * 2)
+        else:
+            rect = QRectF(*args)
+        self._draw_pixels(self._paint_ellipse, self._bounds(rect))
+
+    def _paint_ellipse(self, rect: QRectF) -> None:
+        # Filling an annulus avoids Qt's thin-pen rasterizer, which produces
+        # visibly lighter breaks where diagonal arc segments meet.
+        self.save()
+        try:
+            pen = self.pen()
+            super().setPen(Qt.PenStyle.NoPen)
+            body = QPainterPath()
+            body.addEllipse(rect)
+            super().drawPath(body)
+            if pen.style() == Qt.PenStyle.NoPen:
+                return
+            half = pen.widthF() / 2
+            ring = QPainterPath()
+            ring.setFillRule(Qt.FillRule.OddEvenFill)
+            ring.addEllipse(rect.adjusted(-half, -half, half, half))
+            if rect.width() > 2 * half and rect.height() > 2 * half:
+                ring.addEllipse(rect.adjusted(half, half, -half, -half))
+            self.setBrush(pen.brush())
+            super().drawPath(ring)
+        finally:
+            self.restore()
+
+    def drawPolygon(self, polygon) -> None:
+        self._draw_pixels(super().drawPolygon, QPolygonF([self._point(QPointF(point)) for point in polygon]))
+
+    def drawPolyline(self, polygon) -> None:
+        self._draw_pixels(super().drawPolyline, QPolygonF([self._point(QPointF(point)) for point in polygon]))
+
+    def fillRect(self, x, y, width, height, color) -> None:
+        self._draw_pixels(super().fillRect, self._bounds(QRectF(x, y, width, height), stroke=False), color)
+
+    def drawText(self, rect, flags, text) -> None:
+        # Let the font engine hint glyphs at the final pixel size, too.
+        mapped = self.worldTransform().mapRect(QRectF(rect))
+        font = self.font()
+        font.setPixelSize(max(1, round(QFontInfo(font).pixelSize() * self._scale)))
+        self.save()
+        self.resetTransform()
+        self.setFont(font)
+        super().drawText(mapped, flags, text)
+        self.restore()
+
+    def draw_label(self, text: str) -> None:
+        font = self.font()
+        font.setBold(False)
+        best_size = 1
+        for size in range(1, self._artwork_size * 3):
+            font.setPixelSize(size)
+            bounds = QFontMetrics(font).tightBoundingRect(text)
+            if max(bounds.width(), bounds.height()) > self._artwork_size:
+                break
+            best_size = size
+        # Fallback CJK fonts can have ink bounds smaller than their font metrics.
+        # Fit the actual native glyph pixels, then remove their empty surround.
+        best = None
+        for size in range(max(1, best_size - 2), best_size + self._artwork_size // 2 + 4):
+            font.setPixelSize(size)
+            glyph = QPixmap(self._size * 3, self._size * 3)
+            glyph.fill(Qt.GlobalColor.transparent)
+            painter = _painter(glyph)
+            painter.setFont(font)
+            painter.setPen(self.pen().color())
+            painter.drawText(glyph.rect(), Qt.AlignmentFlag.AlignCenter, text)
+            painter.end()
+            bounds = _ink_bounds(glyph)
+            extent = max(bounds.width(), bounds.height())
+            if extent > self._artwork_size:
+                break
+            best = glyph.copy(bounds)
+            if extent == self._artwork_size:
+                break
+        if best is None:
+            return
+        self.save()
+        self.resetTransform()
+        self.drawPixmap((self._size - best.width()) // 2, (self._size - best.height()) // 2, best)
+        self.restore()
+
+
+def _ink_bounds(pixmap: QPixmap) -> QRect:
+    alpha = pixmap.toImage().convertToFormat(QImage.Format.Format_Alpha8)
+    data = bytes(alpha.constBits())
+    left, top, right, bottom = alpha.width(), alpha.height(), 0, 0
+    for y in range(alpha.height()):
+        row = data[y * alpha.bytesPerLine():y * alpha.bytesPerLine() + alpha.width()]
+        if row.strip(b"\0"):
+            left = min(left, len(row) - len(row.lstrip(b"\0")))
+            right = max(right, len(row.rstrip(b"\0")))
+            top = min(top, y)
+            bottom = y + 1
+    return QRect(left, top, right - left, bottom - top)
+
+
+def _painter(device: QPixmap) -> QPainter:
     painter = QPainter(device)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
     return painter

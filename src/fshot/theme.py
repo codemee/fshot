@@ -98,10 +98,12 @@ def _stylesheet(mode: ThemeMode) -> str:
     if mode == ThemeMode.DARK:
         return """
             QMainWindow { background: #202124; }
-            QToolBar { background: #252629; border: 0; border-bottom: 1px solid #3c4043; spacing: 4px; }
+            QToolBar { background: #252629; border: 0; border-bottom: 1px solid #3c4043; spacing: 4px; padding: 0px 4px; }
             QToolBar::separator { background: #3c4043; width: 1px; margin: 11px 2px; }
             QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
-            QToolBar QToolButton { padding: 4px; }
+            /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
+            QToolBar QToolButton { padding: 6px; }
+            QToolBar QToolButton[lineToolDropdown="true"] { padding: 6px 0px; }
             QToolBar QToolButton[lineToolMain="true"] { border-top-right-radius: 0; border-bottom-right-radius: 0; }
             QToolBar QToolButton[lineToolDropdown="true"] { border-top-left-radius: 0; border-bottom-left-radius: 0; }
             QToolButton::menu-indicator { image: none; width: 0px; }
@@ -133,6 +135,7 @@ def _stylesheet(mode: ThemeMode) -> str:
             }
             QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
             QMenu { background: #292b2f; border: 1px solid #4b4f54; }
+            QMenu#toolbarOverflowMenu { padding: 4px 8px; }
             QMenu::item { padding: 6px 18px; }
             QMenu::item:selected { background: #3c4043; }
             QMenu QWidget { color: #e8eaed; }
@@ -193,10 +196,12 @@ def _stylesheet(mode: ThemeMode) -> str:
         """
     return """
         QMainWindow { background: #f8f9fa; }
-        QToolBar { background: #ffffff; border: 0; border-bottom: 1px solid #dee2e6; spacing: 4px; }
+        QToolBar { background: #ffffff; border: 0; border-bottom: 1px solid #dee2e6; spacing: 4px; padding: 0px 4px; }
         QToolBar::separator { background: #dee2e6; width: 1px; margin: 11px 2px; }
         QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
-        QToolBar QToolButton { padding: 4px; }
+        /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
+        QToolBar QToolButton { padding: 6px; }
+        QToolBar QToolButton[lineToolDropdown="true"] { padding: 6px 0px; }
         QToolBar QToolButton[lineToolMain="true"] { border-top-right-radius: 0; border-bottom-right-radius: 0; }
         QToolBar QToolButton[lineToolDropdown="true"] { border-top-left-radius: 0; border-bottom-left-radius: 0; }
         QToolButton::menu-indicator { image: none; width: 0px; }
@@ -228,6 +233,7 @@ def _stylesheet(mode: ThemeMode) -> str:
         }
         QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
         QMenu { background: #ffffff; border: 1px solid #ced4da; }
+        QMenu#toolbarOverflowMenu { padding: 4px 8px; }
         QMenu::item { padding: 6px 18px; }
         QMenu::item:selected { background: #e7f5ff; }
         QMenu QWidget { color: #343a40; }

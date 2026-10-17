@@ -1,5 +1,5 @@
-from PySide6.QtCore import QPoint, QSize, Qt
-from PySide6.QtGui import QImage, QKeySequence
+from PySide6.QtCore import QPoint, QSize, Qt, QTimer
+from PySide6.QtGui import QColor, QIcon, QImage, QKeySequence, QPixmap
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QPushButton,
@@ -62,6 +62,181 @@ def test_editor_toolbar_uses_compact_buttons(qt_app):
     assert actions.index(window.flip_vertical_action) < actions.index(window.resize_image_action)
     assert actions.index(window.rotate_action) < actions.index(window.resize_image_action)
     assert actions.index(window.resize_image_action) < actions.index(window.style_action)
+
+
+def test_toolbar_and_icon_have_exact_outer_gaps(qt_app):
+    from fshot.main_window import EditorWindow
+    from fshot.theme import ThemeMode, _stylesheet
+
+    window = EditorWindow()
+    original_stylesheet = qt_app.styleSheet()
+    window._add_image(QImage(80, 60, QImage.Format.Format_ARGB32), "example.png")
+    window.resize(1250, 610)
+    window.show()
+    toolbar = window.findChild(QToolBar, "editorToolbar")
+    # A solid marker measures the icon canvas, regardless of artwork shape.
+    marker = QPixmap(20, 20)
+    marker.fill(QColor("#ff0000"))
+    window.pen_action.setIcon(QIcon(marker))
+    try:
+        for mode in (ThemeMode.LIGHT, ThemeMode.DARK):
+            qt_app.setStyleSheet(_stylesheet(mode))
+            qt_app.processEvents()
+            buttons = [toolbar.widgetForAction(action) for action in toolbar.actions()]
+            buttons += [window.line_button, window.line_end_button]
+            for button in buttons:
+                if not isinstance(button, QToolButton) or not button.isVisible():
+                    continue
+                top = button.mapTo(toolbar, QPoint(0, 0)).y()
+                assert top == 4
+                assert toolbar.height() - top - button.height() == 4
+            button = toolbar.widgetForAction(window.pen_action)
+            assert button.x() == 4
+            image = button.grab().toImage()
+            pixels = [(x, y) for y in range(image.height()) for x in range(image.width())
+                      if image.pixelColor(x, y) == QColor("#ff0000")]
+            assert (min(x for x, y in pixels), min(y for x, y in pixels)) == (7, 7)
+            assert (max(x for x, y in pixels), max(y for x, y in pixels)) == (26, 26)
+    finally:
+        window.hide()
+        window.deleteLater()
+        qt_app.processEvents()
+        qt_app.setStyleSheet(original_stylesheet)
+
+
+def test_narrow_toolbar_opens_centered_overflow_menu(qt_app):
+    from fshot.main_window import EditorWindow
+
+    window = EditorWindow()
+    original_stylesheet = qt_app.styleSheet()
+    window.theme_manager.apply()
+    window._add_image(QImage(80, 60, QImage.Format.Format_ARGB32), "example.png")
+    window.resize(600, 610)
+    window.show()
+    qt_app.processEvents()
+    toolbar = window.findChild(QToolBar, "editorToolbar")
+    extension = toolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+    menu = toolbar.overflow_menu
+    observed = {}
+    triggered = []
+    window.zoom_out_action.triggered.connect(lambda: triggered.append(True))
+
+    def choose_hidden_action():
+        observed["visible"] = menu.isVisible()
+        observed["actions"] = menu.actions()
+        menu.setActiveAction(window.zoom_out_action)
+        QTest.keyClick(menu, Qt.Key.Key_Return)
+        menu.close()
+
+    try:
+        assert toolbar.height() == 42
+        assert extension.isVisible()
+        assert extension.height() == 34
+        assert toolbar.width() - extension.geometry().right() - 1 == 4
+        assert abs(extension.geometry().center().y() - toolbar.rect().center().y()) <= 1
+        assert not toolbar.widgetForAction(window.zoom_out_action).isVisible()
+        QTimer.singleShot(0, choose_hidden_action)
+        QTest.mouseClick(extension, Qt.MouseButton.LeftButton)
+        qt_app.processEvents()
+        assert observed["visible"]
+        assert window.zoom_out_action in observed["actions"]
+        assert window.theme_action in observed["actions"]
+        assert window.language_action in observed["actions"]
+        assert window.pen_action not in observed["actions"]
+        assert triggered == [True]
+        assert toolbar.height() == 42
+
+        window.resize(1250, 610)
+        qt_app.processEvents()
+        assert not extension.isVisible()
+        assert toolbar.widgetForAction(window.language_action).isVisible()
+
+        window.resize(600, 610)
+        qt_app.processEvents()
+        QTimer.singleShot(0, choose_hidden_action)
+        QTest.mouseClick(extension, Qt.MouseButton.LeftButton)
+        qt_app.processEvents()
+        assert triggered == [True, True]
+    finally:
+        window.hide()
+        window.deleteLater()
+        qt_app.processEvents()
+        qt_app.setStyleSheet(original_stylesheet)
+
+
+def test_tab_navigation_shortcuts_work_from_canvas_focus(qt_app, tmp_path):
+    from fshot.main_window import EditorWindow
+
+    window = EditorWindow()
+    image = QImage(80, 60, QImage.Format.Format_ARGB32)
+    for index in range(10):
+        window._add_image(image, f"{index}.png", path=tmp_path / f"{index}.png", dirty=False)
+    window.activateWindow()
+    qt_app.processEvents()
+
+    def press(keys):
+        canvas = window._current_canvas()
+        canvas.setFocus()
+        QTest.keySequence(canvas, QKeySequence(keys))
+        qt_app.processEvents()
+
+    try:
+        assert window.tabs.currentIndex() == 9
+        press(window.next_tab_action.shortcuts()[0])
+        assert window.tabs.currentIndex() == 0
+        press(window.previous_tab_action.shortcuts()[0])
+        assert window.tabs.currentIndex() == 9
+        press("Ctrl+PgDown")
+        assert window.tabs.currentIndex() == 0
+        press("Ctrl+PgUp")
+        assert window.tabs.currentIndex() == 9
+        for number in range(1, 9):
+            press(f"Ctrl+{number}")
+            assert window.tabs.currentIndex() == number - 1
+        press("Ctrl+9")
+        assert window.tabs.currentIndex() == 9
+        press("Ctrl+W")
+        assert window.tabs.count() == 9
+        assert window.isVisible()
+        alternate_close = QKeySequence("Ctrl+F4")
+        press(alternate_close if alternate_close in window.close_tab_action.shortcuts() else "Ctrl+W")
+        assert window.tabs.count() == 8
+        press("Ctrl+9")
+        assert window.tabs.currentIndex() == 7
+    finally:
+        window.hide()
+        window.deleteLater()
+        qt_app.processEvents()
+
+
+def test_close_tab_shortcut_respects_unsaved_confirmation(qt_app, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+    from fshot.main_window import EditorWindow
+
+    window = EditorWindow()
+    assert not window.close_tab_action.isEnabled()
+    window._add_image(QImage(80, 60, QImage.Format.Format_ARGB32), "unsaved")
+    window.activateWindow()
+    qt_app.processEvents()
+    replies = [QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes]
+    monkeypatch.setattr(QMessageBox, "question", lambda *args: replies.pop(0))
+    try:
+        for expected_count in (1, 0):
+            canvas = window._current_canvas()
+            canvas.setFocus()
+            QTest.keySequence(canvas, QKeySequence("Ctrl+W"))
+            qt_app.processEvents()
+            assert window.tabs.count() == expected_count
+        assert not replies
+        assert not window.close_tab_action.isEnabled()
+        assert not window.next_tab_action.isEnabled()
+        assert not window.previous_tab_action.isEnabled()
+        assert not any(action.isEnabled() for action in window.numbered_tab_actions)
+        assert window.isVisible()
+    finally:
+        window.hide()
+        window.deleteLater()
+        qt_app.processEvents()
 
 
 def test_selected_tool_applies_when_switching_tabs(qt_app):
