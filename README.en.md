@@ -2,13 +2,13 @@
 
 [繁體中文](https://github.com/codemee/fshot/blob/main/README.md) | [English](https://github.com/codemee/fshot/blob/main/README.en.md)
 
-FShot is a Python desktop screenshot utility focused on global shortcuts, a persistent system tray, tabbed editing, and fast copy/save workflows. Windows and macOS are currently supported. See [Cross-Platform Notes](https://github.com/codemee/fshot/blob/main/docs/cross-platform.en.md) for platform permissions and acceptance guidance.
+FShot is a desktop screenshot utility with global shortcuts, a persistent system tray, tabbed editing, and fast copy/save workflows for Windows and macOS.
 
-## Current Status
+## Supported platforms
 
-- Windows: Core features are implemented and have been manually tested and refined.
-- macOS: Quartz global shortcuts, screen capture, focused-window capture, window/control selection, and cursor capture are implemented.
-- Linux: Only the base architecture and some shared capabilities exist; Linux is not currently a primary target.
+- Windows 10/11 x64.
+- macOS Apple Silicon; Intel Macs are not supported.
+- Linux is not yet officially supported.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ For regular use, download a build from [GitHub Releases](https://github.com/code
 - Windows 10/11 x64: a portable `FShot-<version>-windows-x64.exe` that does not require Python.
 - Apple Silicon Mac: `FShot-<version>-macos-arm64.dmg`; open it and drag `FShot.app` to Applications. Intel Macs are not supported.
 
-These personal-project builds have no trusted Authenticode or Apple Developer ID signature and are not notarized by Apple. Windows may show SmartScreen; on first launch, macOS requires **Open Anyway** under System Settings → Privacy & Security, followed by Screen Recording and Accessibility permissions. Use `SHA256SUMS.txt` from the same release to verify the download. See the [Windows installation guide](docs/install-windows.en.md) or [macOS installation guide](docs/install-macos.en.md) for complete steps.
+Windows may show a SmartScreen prompt on first launch. On macOS, you may need **Open Anyway** under System Settings → Privacy & Security, followed by Screen Recording and Accessibility permissions. See the [Windows installation guide](docs/install-windows.en.md) or [macOS installation guide](docs/install-macos.en.md) for setup, permissions, and download verification.
 
 ### Run from PyPI
 
@@ -44,20 +44,7 @@ After installation, run the app with `fshot`. Upgrade to the latest PyPI release
 uv tool upgrade fshot
 ```
 
-When installed with `uv tool install`, FShot checks PyPI in the background at most once per day. The tray menu can check manually or disable automatic checks. When an update is available, you can update and restart, postpone it, or skip that release. FShot asks before discarding any unsaved screenshots. Packaged apps check GitHub Releases and open the download page instead of replacing an unsigned EXE or App. `uvx` and source checkouts receive manual update guidance.
-
-Install the latest development version directly from GitHub's `main` branch:
-
-```powershell
-uv tool install --force "fshot @ git+https://github.com/codemee/fshot.git@main"
-```
-
-Run from a source checkout:
-
-```powershell
-uv sync
-uv run fshot
-```
+When installed with `uv tool install`, FShot checks PyPI in the background at most once per day. The tray menu can check manually or disable automatic checks. When an update is available, you can update and restart, postpone it, or skip that release. FShot asks before discarding any unsaved screenshots. Desktop builds check GitHub Releases and open the download page for manual updates. `uvx` users receive manual update guidance.
 
 FShot starts with its editor hidden and remains in the system tray. Double-click the tray icon to show the editor; use the tray context menu to exit.
 
@@ -66,27 +53,11 @@ The keyboard icon opens the global shortcut settings for all four capture modes 
 
 Images can also be added by drag-and-drop or clipboard paste. A dropped image opens under its full file name, retains its source path, and is saved back after editing. Pasted images create new unsaved tabs using the screenshot timestamp naming format. After a successful save, FShot remembers the containing directory and uses it when opening the Save dialog for other unsaved tabs. Paste uses <kbd>Ctrl</kbd>+<kbd>V</kbd> on Windows/Linux and <kbd>⌘</kbd>+<kbd>V</kbd> on macOS.
 
-## Virtual 4K Capture (Windows experimental feature)
+## Virtual screen capture (experimental)
 
-The toolbar monitor button switches between physical (solid outline) and virtual (dashed outline) capture and remembers the choice. Virtual mode uses the same shortcuts:
+For higher-resolution window captures, switch the toolbar monitor button to virtual mode; the choice is remembered. This feature needs a virtual display and the relevant system permissions.
 
-- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>: move and resize the active window to the virtual monitor, capture it, then restore its original position, size, and window state.
-- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd>: select a window/control on the original monitor, move its owning window, and capture the tracked target. An unavailable or unstable target produces an error.
-- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>: capture the monitor containing the cursor directly, in either mode.
-- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>: repeat the previous successful capture; physical and virtual modes maintain separate histories.
-- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>: unavailable in virtual mode; switch to physical mode for region capture.
-
-FShot chooses the active virtual monitor with the largest pixel area. Window width and height are scaled independently according to their original proportions of the source monitor. Windows display scaling is left to the user. Minimized windows must be restored first; windows that cannot fit the destination work area are rejected. The original placement is restored after capture, cancellation, or failure. Layout and image detail depend on the target application's DPI support.
-
-Switching to virtual mode checks for an existing virtual monitor and supported driver. If neither is available, FShot asks to install the official VirtualDrivers/MikeTheTech Virtual Display Driver through WinGet and create a 3840 × 2160 extended monitor. If the driver is already present, it asks only to create the monitor. UAC approval remains manual; cancellation or failure keeps physical mode. Setup backs up `C:\\VirtualDisplayDriver\\vdd_settings.xml` and preserves existing configuration on reinstall. Other drivers can be used with an already active virtual monitor. There is no separate virtual-capture tray entry. This workflow is currently Windows-only.
-
-### Delayed active-window interaction
-
-Enable virtual mode and a delay greater than zero (try 5 or 10 seconds), leave the cursor on a physical monitor, focus the target app, and press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>. After moving the target, FShot shows a non-activating mirror on the physical monitor. The countdown begins when the first frame is ready.
-
-During the countdown, mouse input is forwarded to the virtual display and shown as a crosshair; keyboard input stays with the target. Click, drag, scroll, or open menus before capture. <kbd>Esc</kbd> cancels and restores the window and cursor. Losing target focus, disappearing targets, or input-forwarding failures stop the session. Elevated apps may reject forwarded input.
-
-Preview capture runs in the background with a 30 fps target, scales to the physical preview size, and retains only the latest frame. On Windows it uses DXGI for the virtual display when available and falls back to `mss` if DXGI cannot start. Run `uv run python scripts/benchmark_windows_preview.py` to compare both paths on your computer. Frame-ready notifications and local cursor repainting reduce waiting; actual responsiveness depends on the system and display driver. The final image still uses the virtual monitor's original pixels and includes native menus/new owned popups before closing the mirror. Custom-drawn menus need manual acceptance testing. Zero-delay, selected-control, and full-screen capture keep their existing flows.
+See the [Virtual Screen Capture Guide](docs/virtual-screen.en.md) for Windows/macOS setup, delayed interaction previews, and limitations.
 
 ## Capture Shortcuts
 
@@ -135,32 +106,10 @@ These Windows/Linux shortcuts work within the editor window:
 
 On macOS, closing and numbered selection use <kbd>⌘</kbd>; previous/next use Qt's platform-standard bindings. Closing the last tab leaves the editor window open.
 
-## Project Docs
+## More help
 
-- [PRD](https://github.com/codemee/fshot/blob/main/PRD.en.md): Original product requirements.
-- [Architecture](https://github.com/codemee/fshot/blob/main/docs/architecture.en.md): Project structure, modules, and data flow.
-- [uv-tool-updater design draft](docs/uv-tool-updater-spec.md) (Traditional Chinese): updater design background and current FShot integration status.
-- [Cross-Platform Notes](https://github.com/codemee/fshot/blob/main/docs/cross-platform.en.md): Windows/macOS/Linux differences and platform acceptance guidance.
+- [Windows installation and permissions](docs/install-windows.en.md)
+- [macOS installation and permissions](docs/install-macos.en.md)
+- [Virtual Screen Capture Guide](docs/virtual-screen.en.md)
 
-## Development
-
-```shell
-uv sync
-uv run pytest -q
-uv run python -m compileall src tests
-```
-
-If FShot is running, `compileall` may occasionally fail because an executable or `__pycache__` file is locked. Stop FShot and rerun the command.
-
-## Desktop Packaging
-
-FShot uses PyInstaller and must be built on the target operating system. A Windows runner produces the single x64 EXE; an Apple Silicon macOS runner produces an arm64 DMG containing `FShot.app` and an Applications shortcut. Intel Mac builds are not produced.
-
-Build locally:
-
-```powershell
-uv sync
-uv run python scripts/build_app.py
-```
-
-Outputs are written to `dist/`. Publishing a GitHub Release automatically runs tests and packaging on native Windows and macOS runners, then attaches the EXE, DMG, and `SHA256SUMS.txt` through the `Package desktop apps` workflow. The workflow uses no Authenticode, Apple Developer ID, or notarization credentials, so the resulting files retain the SmartScreen and Gatekeeper behavior described above. See [Desktop Packaging](docs/packaging.md) for development and manual recovery details.
+For contributions, see the [Development Guide](docs/development.en.md), including links to architecture, platform notes, and packaging documentation.
