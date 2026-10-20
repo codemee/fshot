@@ -31,7 +31,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QMenu,
-    QMessageBox,
     QPushButton,
     QScrollArea,
     QSlider,
@@ -49,6 +48,7 @@ from PySide6.QtWidgets import (
 )
 
 from fshot import __version__
+from fshot.dialogs import MessageDialog
 from fshot.canvas import CANVAS_PADDING, ImageCanvas
 from fshot.document import ShotDocument, make_tab_title
 from fshot.icons import camera_icon, line_end_style_icon, tool_icon
@@ -431,7 +431,7 @@ class EditorWindow(QMainWindow):
             with Image.open(path) as image:
                 qimage = pil_to_qimage(image)
         except (OSError, ValueError):
-            QMessageBox.warning(self, "FShot", self._tr("open_image_failed", path=path))
+            MessageDialog.warning(self, "FShot", self._tr("open_image_failed", path=path))
             return False
         self._add_image(
             qimage,
@@ -467,20 +467,23 @@ class EditorWindow(QMainWindow):
 
         QApplication.clipboard().setImage(canvas.export_image())
 
-    def save_current(self) -> None:
+    def save_current(self) -> bool:
         doc = self._current_doc()
-        if doc is None or not doc.can_save:
-            return
-        if doc.path is None:
-            self.save_current_as()
-            return
-        self._save_to_path(doc, doc.path)
+        if doc is None:
+            return False
+        return not doc.can_save or self._save_document(doc)
 
-    def save_current_as(self) -> None:
+    def save_current_as(self) -> bool:
         doc = self._current_doc()
-        canvas = self._current_canvas()
-        if doc is None or canvas is None:
-            return
+        return self._save_document(doc, choose_path=True) if doc is not None else False
+
+    def _save_document(self, doc: ShotDocument, *, choose_path: bool = False) -> bool:
+        if doc.path is not None and not choose_path:
+            return self._save_to_path(doc, doc.path)
+        for index, candidate in self.documents.items():
+            if candidate is doc:
+                self.tabs.setCurrentIndex(index)
+                break
         default_path = self._default_save_path(doc)
         path, selected = QFileDialog.getSaveFileName(
             self,
@@ -490,11 +493,11 @@ class EditorWindow(QMainWindow):
             "PNG Image (*.png)" if default_path.suffix.lower() != ".jpg" else "JPEG Image (*.jpg *.jpeg)",
         )
         if not path:
-            return
+            return False
         target = Path(path)
         if not target.suffix:
             target = target.with_suffix(".jpg" if "JPEG" in selected else ".png")
-        self._save_to_path(doc, target)
+        return self._save_to_path(doc, target)
 
     def _default_save_path(self, doc: ShotDocument) -> Path:
         if doc.path is not None:
@@ -546,16 +549,29 @@ class EditorWindow(QMainWindow):
         event.ignore()
 
     def confirm_discard_all(self, message_key: str = "close_discard_all") -> bool:
-        if not self._has_dirty_documents():
+        documents = [doc for doc in self.documents.values() if doc.is_dirty]
+        return self._confirm_unsaved(documents, message_key)
+
+    def _confirm_unsaved(self, documents: list[ShotDocument], message_key: str) -> bool:
+        if not documents:
             return True
-        reply = QMessageBox.question(
-            self,
-            "FShot",
-            self._tr(message_key),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+        if len(documents) == 1:
+            summary = self._tr("unsaved_single", title=documents[0].title)
+        else:
+            summary = self._tr("unsaved_many", count=len(documents))
+        context = {
+            "update_discard_all": "unsaved_update_help",
+            "quit_unsaved": "unsaved_quit_help",
+        }.get(message_key, "unsaved_close_help")
+        reply = MessageDialog.unsaved(
+            self, self._tr("unsaved_title"), f"{summary}\n\n{self._tr(context)}",
+            multiple=len(documents) > 1,
         )
-        return reply == QMessageBox.StandardButton.Yes
+        if reply == MessageDialog.StandardButton.Discard:
+            return True
+        if reply == MessageDialog.StandardButton.Save:
+            return all(self._save_document(doc) for doc in documents)
+        return False
 
     def changeEvent(self, event) -> None:
         if event.type() == event.Type.WindowStateChange and self.isMinimized():
@@ -1277,7 +1293,7 @@ class EditorWindow(QMainWindow):
             self._finish_tab_rename()
             return
         if not name or name in {".", ".."} or "/" in name or "\\" in name:
-            QMessageBox.warning(self, "FShot", self._tr("rename_invalid"))
+            MessageDialog.warning(self, "FShot", self._tr("rename_invalid"))
             self._tab_name_editor.setFocus(Qt.FocusReason.OtherFocusReason)
             self._tab_name_editor.selectAll()
             return
@@ -1292,14 +1308,14 @@ class EditorWindow(QMainWindow):
         except OSError:
             target_is_other_file = target.exists()
         if target_is_other_file:
-            QMessageBox.warning(self, "FShot", self._tr("rename_exists", name=target.name))
+            MessageDialog.warning(self, "FShot", self._tr("rename_exists", name=target.name))
             self._tab_name_editor.setFocus(Qt.FocusReason.OtherFocusReason)
             self._tab_name_editor.selectAll()
             return
         try:
             source.rename(target)
         except OSError:
-            QMessageBox.warning(self, "FShot", self._tr("rename_failed", path=source))
+            MessageDialog.warning(self, "FShot", self._tr("rename_failed", path=source))
             self._tab_name_editor.setFocus(Qt.FocusReason.OtherFocusReason)
             self._tab_name_editor.selectAll()
             return
@@ -1316,10 +1332,8 @@ class EditorWindow(QMainWindow):
         self._tab_name_editor.hide()
         self._update_actions()
 
-    def _save_to_path(self, doc: ShotDocument, path: Path) -> None:
-        canvas = self._current_canvas()
-        if canvas is None:
-            return
+    def _save_to_path(self, doc: ShotDocument, path: Path) -> bool:
+        canvas = doc.image
         suffix = path.suffix.lower()
         image = canvas.export_image()
         formats = {
@@ -1333,11 +1347,12 @@ class EditorWindow(QMainWindow):
         }
         fmt = formats.get(suffix, "PNG")
         if not image.save(str(path), fmt):
-            QMessageBox.warning(self, "FShot", self._tr("save_failed", path=path))
-            return
+            MessageDialog.warning(self, "FShot", self._tr("save_failed", path=path))
+            return False
         doc.mark_saved(path)
         self.app_settings.setValue(LAST_SAVE_DIRECTORY_KEY, str(path.parent))
         self._refresh_tabs()
+        return True
 
     def _current_area(self) -> QScrollArea | None:
         widget = self.tabs.currentWidget()
@@ -1372,16 +1387,10 @@ class EditorWindow(QMainWindow):
         if self._rename_tab_index is not None:
             self._cancel_tab_rename()
         doc = self.documents.get(index)
-        if doc and doc.is_dirty:
-            reply = QMessageBox.question(
-                self,
-                "FShot",
-                self._tr("close_discard_tab", title=doc.title),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
-            )
-            if reply != QMessageBox.StandardButton.Yes:
-                return
+        if doc is None:
+            return
+        if doc.is_dirty and not self._confirm_unsaved([doc], "close_discard_tab"):
+            return
         self.tabs.removeTab(index)
         self._reindex_documents(index)
         self._refresh_tabs()

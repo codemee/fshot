@@ -210,7 +210,7 @@ def test_tab_navigation_shortcuts_work_from_canvas_focus(qt_app, tmp_path):
 
 
 def test_close_tab_shortcut_respects_unsaved_confirmation(qt_app, monkeypatch):
-    from PySide6.QtWidgets import QMessageBox
+    from fshot.dialogs import MessageDialog
     from fshot.main_window import EditorWindow
 
     window = EditorWindow()
@@ -218,8 +218,8 @@ def test_close_tab_shortcut_respects_unsaved_confirmation(qt_app, monkeypatch):
     window._add_image(QImage(80, 60, QImage.Format.Format_ARGB32), "unsaved")
     window.activateWindow()
     qt_app.processEvents()
-    replies = [QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes]
-    monkeypatch.setattr(QMessageBox, "question", lambda *args: replies.pop(0))
+    replies = [MessageDialog.StandardButton.Cancel, MessageDialog.StandardButton.Discard]
+    monkeypatch.setattr(MessageDialog, "unsaved", lambda *args, **kwargs: replies.pop(0))
     try:
         for expected_count in (1, 0):
             canvas = window._current_canvas()
@@ -446,7 +446,7 @@ def test_rename_preserves_dirty_state_and_does_not_replace_existing_file(
     source.write_bytes(b"old")
     existing.write_bytes(b"existing")
     warnings = []
-    monkeypatch.setattr(main_window.QMessageBox, "warning", lambda *args: warnings.append(args))
+    monkeypatch.setattr(main_window.MessageDialog, "warning", lambda *args: warnings.append(args))
     window = main_window.EditorWindow()
     window._add_image(
         QImage(6, 5, QImage.Format.Format_ARGB32), source.name, path=source, dirty=True

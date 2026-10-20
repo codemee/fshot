@@ -106,6 +106,8 @@ These Windows/Linux shortcuts work within the editor window:
 
 On macOS, closing and numbered selection use <kbd>⌘</kbd>; previous/next use Qt's platform-standard bindings. Closing the last tab leaves the editor window open.
 
+Before closing tabs, closing the editor, quitting, or updating, unsaved screenshots can be saved, discarded, or kept by cancelling. Save all processes each document separately; cancelling a save or encountering a write error preserves the tabs and stops the close/update. Closing the editor leaves FShot in the system tray.
+
 ## More help
 
 - [Windows installation and permissions](docs/install-windows.en.md)

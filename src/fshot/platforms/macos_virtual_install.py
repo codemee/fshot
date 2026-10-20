@@ -10,7 +10,9 @@ import tempfile
 import time
 
 from PySide6.QtCore import QEventLoop, QTimer, Qt
-from PySide6.QtWidgets import QMessageBox, QProgressDialog
+from PySide6.QtWidgets import QProgressDialog
+
+from fshot.dialogs import MessageDialog
 
 
 def brew_path():
@@ -26,9 +28,9 @@ def brew_path():
 
 
 def ask(parent, tr, key):
-    return QMessageBox.question(parent, "FShot", tr(key),
-        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes
+    return MessageDialog.question(parent, "FShot", tr(key),
+        MessageDialog.StandardButton.Yes | MessageDialog.StandardButton.No,
+        MessageDialog.StandardButton.No) == MessageDialog.StandardButton.Yes
 
 
 def terminal_script(command: str, result: Path) -> str:

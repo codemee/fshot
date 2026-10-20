@@ -82,6 +82,18 @@ def test_declined_unsaved_changes_cancel_update(qt_app, tmp_path, monkeypatch):
     assert updater.session.host_pid is None
 
 
+def test_quit_respects_unsaved_confirmation(qt_app, tmp_path, monkeypatch):
+    controller, _updater = _controller(qt_app, tmp_path, monkeypatch)
+    stopped = []
+    monkeypatch.setattr(controller, "_shutdown", lambda: stopped.append(True))
+    monkeypatch.setattr(controller.window, "confirm_discard_all", lambda _key: False)
+    controller.quit()
+    assert stopped == []
+    monkeypatch.setattr(controller.window, "confirm_discard_all", lambda _key: True)
+    controller.quit()
+    assert stopped == [True]
+
+
 def test_packaged_app_uses_github_release_checker(qt_app, tmp_path, monkeypatch):
     from fshot.updates import GitHubReleaseUpdater
 

@@ -181,7 +181,7 @@ def test_failed_save_does_not_replace_last_save_directory(qt_app, tmp_path, monk
     window = main_window.EditorWindow(app_settings=settings)
     image = QImage(6, 5, QImage.Format.Format_ARGB32)
     window._add_image(image, "new-shot")
-    monkeypatch.setattr(main_window.QMessageBox, "warning", lambda *_args: None)
+    monkeypatch.setattr(main_window.MessageDialog, "warning", lambda *_args: None)
 
     window._save_to_path(window.documents[0], tmp_path / "missing" / "failed.png")
 

@@ -235,6 +235,19 @@ def _stylesheet(mode: ThemeMode) -> str:
                 selection-color: $on_accent;
             }
             QLineEdit:focus { border-color: $accent; }
+            QDialog#messageDialog { background: $window; }
+            QLabel#messageHeading { color: $text; font-size: 16px; font-weight: 600; }
+            QTextEdit#messageBody { background: transparent; color: $muted; border: 0; padding: 0; font-size: 13px; }
+            QDialog#messageDialog QPushButton { background: $panel; color: $text; border: 1px solid $border; border-radius: 5px; padding: 5px 12px; }
+            QDialog#messageDialog QPushButton:hover { background: $hover; }
+            QDialog#messageDialog QPushButton:focus { border-color: $accent; }
+            QDialog#messageDialog QPushButton[dialogRole="primary"] { background: $accent; color: $on_accent; border-color: $accent; }
+            QDialog#messageDialog QPushButton[dialogRole="primary"]:hover { background: #bdf75b; }
+            QDialog#messageDialog QPushButton[dialogRole="primary"]:focus { border: 2px solid $text; }
+            QDialog#messageDialog QPushButton[dialogRole="primary"]:pressed { background: #94d322; }
+            QDialog#messageDialog QPushButton[dialogRole="destructive"] { background: transparent; color: $warning; border-color: transparent; }
+            QDialog#messageDialog QPushButton[dialogRole="destructive"]:hover { background: $raised; }
+            QDialog#messageDialog QPushButton[dialogRole="destructive"]:focus { border-color: $warning; }
         """).substitute(DARK_COLORS)
     return """
         QMainWindow { background: #f8f9fa; }
@@ -332,4 +345,17 @@ def _stylesheet(mode: ThemeMode) -> str:
             margin: -5px 0;
             border-radius: 7px;
         }
+        QDialog#messageDialog { background: #ffffff; }
+        QLabel#messageHeading { color: #202124; font-size: 16px; font-weight: 600; }
+        QTextEdit#messageBody { background: transparent; color: #495057; border: 0; padding: 0; font-size: 13px; }
+        QDialog#messageDialog QPushButton { background: #f8f9fa; color: #343a40; border: 1px solid #ced4da; border-radius: 5px; padding: 5px 12px; }
+        QDialog#messageDialog QPushButton:hover { background: #e9ecef; }
+        QDialog#messageDialog QPushButton:focus { border-color: #1971c2; }
+        QDialog#messageDialog QPushButton[dialogRole="primary"] { background: #1971c2; color: #ffffff; border-color: #1971c2; }
+        QDialog#messageDialog QPushButton[dialogRole="primary"]:hover { background: #1864ab; }
+        QDialog#messageDialog QPushButton[dialogRole="primary"]:focus { border: 2px solid #0b3155; }
+        QDialog#messageDialog QPushButton[dialogRole="primary"]:pressed { background: #0b5394; }
+        QDialog#messageDialog QPushButton[dialogRole="destructive"] { background: transparent; color: #a94b00; border-color: transparent; }
+        QDialog#messageDialog QPushButton[dialogRole="destructive"]:hover { background: #fff4e6; }
+        QDialog#messageDialog QPushButton[dialogRole="destructive"]:focus { border-color: #a94b00; }
     """

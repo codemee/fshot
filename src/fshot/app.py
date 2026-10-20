@@ -18,7 +18,7 @@ from PySide6.QtCore import (
     Signal,
 )
 from PySide6.QtGui import QAction, QCursor, QDesktopServices, QGuiApplication
-from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
+from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 from uv_tool_updater import (
     InstallStatus,
     ReleaseInfo,
@@ -27,6 +27,7 @@ from uv_tool_updater import (
     Updater,
 )
 
+from fshot.dialogs import MessageDialog
 from fshot.capture import CaptureService
 from fshot.virtual_screen import VirtualCaptureSession
 from fshot.icons import tray_icon
@@ -226,7 +227,8 @@ class FShotApplication(QObject):
         _activate_window(self.window)
 
     def quit(self) -> None:
-        self._shutdown()
+        if self.window.confirm_discard_all("quit_unsaved"):
+            self._shutdown()
 
     def _shutdown(self) -> None:
         self._unregister_hotkeys()
@@ -300,21 +302,21 @@ class FShotApplication(QObject):
             if any(display.is_virtual for display in displays()):
                 return True
             if not installed_driver():
-                answer = QMessageBox.question(
+                answer = MessageDialog.question(
                     self.window, "FShot", self.language_manager.text("virtual_install_question"),
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.No,
+                    MessageDialog.StandardButton.Yes | MessageDialog.StandardButton.No,
+                    MessageDialog.StandardButton.No,
                 )
-                if answer != QMessageBox.StandardButton.Yes:
+                if answer != MessageDialog.StandardButton.Yes:
                     return False
                 install_driver(self.window, self.language_manager.text)
             else:
-                answer = QMessageBox.question(
+                answer = MessageDialog.question(
                     self.window, "FShot", self.language_manager.text("virtual_create_question"),
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.No,
+                    MessageDialog.StandardButton.Yes | MessageDialog.StandardButton.No,
+                    MessageDialog.StandardButton.No,
                 )
-                if answer != QMessageBox.StandardButton.Yes:
+                if answer != MessageDialog.StandardButton.Yes:
                     return False
             create_4k_display(self.window, self.language_manager.text)
             return True
@@ -362,11 +364,11 @@ class FShotApplication(QObject):
         QTimer.singleShot(120, do_capture)
 
     def _show_capture_error(self, error: Exception) -> None:
-        dialog = QMessageBox(
-            QMessageBox.Icon.Warning, "FShot",
-            self.language_manager.text("capture_failed", error=error),
-            QMessageBox.StandardButton.Ok, self.window,
-        )
+        dialog = MessageDialog(self.window)
+        dialog.setIcon(MessageDialog.Icon.Warning)
+        dialog.setText(self.language_manager.text("capture_failed", error=error))
+        ok_button = dialog.addButton(self.language_manager.text("ok"), MessageDialog.ButtonRole.AcceptRole)
+        dialog.setDefaultButton(ok_button)
         dialog.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
         screen = QGuiApplication.screenAt(QCursor.pos()) or QGuiApplication.primaryScreen()
         if screen is not None:
@@ -447,7 +449,7 @@ class FShotApplication(QObject):
 
     def _update_check_failed(self, message: str, manual: bool) -> None:
         if manual:
-            QMessageBox.warning(
+            MessageDialog.warning(
                 self.window,
                 "FShot",
                 self.language_manager.text("update_check_failed", error=message),
@@ -464,19 +466,19 @@ class FShotApplication(QObject):
             return
         if check.status is UpdateStatus.UP_TO_DATE:
             current = str(check.installed.current_version) if check.installed is not None else ""
-            QMessageBox.information(
+            MessageDialog.information(
                 self.window,
                 "FShot",
                 self.language_manager.text("update_up_to_date", version=current),
             )
         elif check.status is UpdateStatus.UNSUPPORTED_INSTALLATION:
-            QMessageBox.information(
+            MessageDialog.information(
                 self.window,
                 "FShot",
                 self.language_manager.text("update_unsupported"),
             )
         else:
-            QMessageBox.warning(
+            MessageDialog.warning(
                 self.window,
                 "FShot",
                 self.language_manager.text(
@@ -490,8 +492,8 @@ class FShotApplication(QObject):
             return
         current = str(check.installed.current_version) if check.installed is not None else ""
         latest = str(release.version)
-        dialog = QMessageBox(self.window)
-        dialog.setIcon(QMessageBox.Icon.Information)
+        dialog = MessageDialog(self.window)
+        dialog.setIcon(MessageDialog.Icon.Information)
         dialog.setWindowTitle(self.language_manager.text("update_available_title"))
         dialog.setText(
             self.language_manager.text(
@@ -500,13 +502,13 @@ class FShotApplication(QObject):
         )
         update_button = dialog.addButton(
             self.language_manager.text("update_download" if self.packaged else "update_now"),
-            QMessageBox.ButtonRole.AcceptRole,
+            MessageDialog.ButtonRole.AcceptRole,
         )
         later_button = dialog.addButton(
-            self.language_manager.text("update_later"), QMessageBox.ButtonRole.RejectRole
+            self.language_manager.text("update_later"), MessageDialog.ButtonRole.RejectRole
         )
         skip_button = dialog.addButton(
-            self.language_manager.text("update_skip"), QMessageBox.ButtonRole.DestructiveRole
+            self.language_manager.text("update_skip"), MessageDialog.ButtonRole.DestructiveRole
         )
         dialog.setDefaultButton(update_button)
         dialog.exec()
@@ -526,7 +528,7 @@ class FShotApplication(QObject):
 
     def _install_update(self, release: ReleaseInfo) -> None:
         if self._capture_in_progress:
-            QMessageBox.information(
+            MessageDialog.information(
                 self.window,
                 "FShot",
                 self.language_manager.text("update_capture_in_progress"),
@@ -543,7 +545,7 @@ class FShotApplication(QObject):
             )
             session.start_helper(host_pid=os.getpid())
         except Exception as exc:
-            QMessageBox.warning(
+            MessageDialog.warning(
                 self.window,
                 "FShot",
                 self.language_manager.text("update_start_failed", error=exc),
@@ -605,7 +607,7 @@ class FShotApplication(QObject):
             except Exception as exc:
                 self._native_hotkey_filter = None
                 if show_warning:
-                    QMessageBox.warning(self.window, "FShot", f"Native global hotkeys unavailable: {exc}")
+                    MessageDialog.warning(self.window, "FShot", f"Native global hotkeys unavailable: {exc}")
                 return False
 
         if sys.platform == "darwin":
@@ -630,14 +632,14 @@ class FShotApplication(QObject):
                 return True
             except Exception as exc:
                 if show_warning:
-                    QMessageBox.warning(self.window, "FShot", f"macOS global hotkeys unavailable: {exc}")
+                    MessageDialog.warning(self.window, "FShot", f"macOS global hotkeys unavailable: {exc}")
                 return False
 
         try:
             import keyboard
         except Exception as exc:  # pragma: no cover - optional dependency guard
             if show_warning:
-                QMessageBox.warning(self.window, "FShot", f"Global hotkeys unavailable: {exc}")
+                MessageDialog.warning(self.window, "FShot", f"Global hotkeys unavailable: {exc}")
             return False
 
         for action, combination in bindings.items():
@@ -652,7 +654,7 @@ class FShotApplication(QObject):
             except Exception as exc:
                 self._unregister_hotkeys()
                 if show_warning:
-                    QMessageBox.warning(self.window, "FShot", f"Could not register {shortcut}: {exc}")
+                    MessageDialog.warning(self.window, "FShot", f"Could not register {shortcut}: {exc}")
                 return False
         return True
 
