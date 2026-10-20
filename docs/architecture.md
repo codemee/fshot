@@ -122,6 +122,7 @@
 
 - `theme.py`
   - 管理跟隨系統、淺色與深色三種模式，透過 `QSettings` 持久化，並在系統配色變更時即時套用。
+  - 深色採初號機風格：深紫底色、紫色面板、螢光綠選取與焦點、橘色提示。`DARK_COLORS` 共用於 palette、stylesheet、圖示遮罩與文件圖片；螢光綠底上的文字使用深色，維持選取狀態的對比。
   - `ThemeManager` 在 application 層建立並注入 `EditorWindow`，統一管理 palette、stylesheet 與依主題重繪的工具列圖示。
   - 淺色與深色面板使用對應色票但維持相同控制項結構；數值欄位由 `ArrowSpinBox` 提供跨平台一致且可連續操作的上下按鈕。
 

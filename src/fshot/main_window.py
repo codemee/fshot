@@ -14,6 +14,7 @@ from PySide6.QtGui import (
     QIcon,
     QKeySequence,
     QPainter,
+    QPalette,
     QPen,
     QPixmap,
 )
@@ -223,7 +224,8 @@ class TabStatusWidget(QWidget):
         layout.setSpacing(5)
         self.marker = QLabel()
         self.marker.setFixedSize(7, 7)
-        self.marker.setStyleSheet("background: #e03131; border: 0;")
+        self.marker.setBackgroundRole(QPalette.ColorRole.BrightText)
+        self.marker.setAutoFillBackground(True)
         layout.addWidget(self.marker, 0, Qt.AlignmentFlag.AlignVCenter)
         self.close_button = close_button if isinstance(close_button, QAbstractButton) else None
         if close_button is not None:
@@ -1098,7 +1100,7 @@ class EditorWindow(QMainWindow):
         warning = QLabel()
         warning.setObjectName("hotkeyWarning")
         warning.setWordWrap(True)
-        warning.setStyleSheet("color: #e03131;")
+        warning.setStyleSheet(f"color: {self.palette().color(QPalette.ColorRole.BrightText).name()};")
         layout.addWidget(warning, len(HOTKEY_ACTIONS) + 1, 0, 1, 5)
         buttons = QHBoxLayout()
         default_button = QPushButton(self._tr("use_defaults"))

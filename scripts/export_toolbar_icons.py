@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QApplication, QStyle, QStyleOption
 
 from fshot.icons import DARK_INK, INK, tool_icon
 from fshot.settings import DrawingSettings
+from fshot.theme import DARK_COLORS
 
 
 def _export_theme(app: QApplication, destination: Path, *, dark: bool) -> int:
@@ -42,7 +43,7 @@ def _export_theme(app: QApplication, destination: Path, *, dark: bool) -> int:
     for badge in ("system", "zh_TW", "en"):
         icons[f"language_{badge}"] = tool_icon("language", badge=badge, dark=dark)
 
-    background = QColor("#252629" if dark else "#f8f9fa")
+    background = QColor(DARK_COLORS["panel"] if dark else "#f8f9fa")
     for name, icon in icons.items():
         # Opaque tiles preserve contrast in viewers that only show the fallback.
         tile = QPixmap(40, 40)

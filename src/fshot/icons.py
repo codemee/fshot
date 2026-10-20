@@ -5,9 +5,10 @@ import math
 from PySide6.QtCore import QLineF, QPoint, QPointF, QRect, QRectF, Qt
 from PySide6.QtGui import QColor, QFontInfo, QFontMetrics, QIcon, QImage, QPainter, QPainterPath, QPen, QPolygon, QPolygonF, QPixmap
 
+from fshot.theme import DARK_COLORS
 
 INK = QColor("#202124")
-DARK_INK = QColor("#e8eaed")
+DARK_INK = QColor(DARK_COLORS["text"])
 CAMERA_INK = QColor("#5c6269")
 # Icons use a 32 px drawing grid; 1.6 becomes a 1 px stroke at toolbar size.
 TOOL_STROKE_WIDTH = 1.6
@@ -346,7 +347,7 @@ def _draw_tool_icon(
         painter.drawRect(13, 7, 7, 4)
         painter.drawRoundedRect(13, 16, 7, 4, 1, 1)
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor("#252629") if dark else QColor("#ffffff"))
+        painter.setBrush(QColor(DARK_COLORS["panel"]) if dark else QColor("#ffffff"))
         painter.drawRoundedRect(5, 9, 17, 19, 3, 3)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
@@ -368,11 +369,12 @@ def _draw_tool_icon(
         path.lineTo(16, 20)
         path.lineTo(13, 27)
         path.lineTo(9, 6)
-        painter.setBrush(BLUE if checked else QColor("#252629") if dark else QColor("#ffffff"))
+        painter.setBrush(QColor(DARK_COLORS["raised"]) if dark and checked else BLUE if checked
+                         else QColor(DARK_COLORS["panel"]) if dark else QColor("#ffffff"))
         painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH))
         painter.drawPath(path)
         if checked:
-            check_pen = QPen(GREEN, 1.8)
+            check_pen = QPen(QColor(DARK_COLORS["accent"]) if dark else GREEN, 1.8)
             check_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(check_pen)
             painter.drawLine(20, 25, 24, 29)
@@ -388,9 +390,9 @@ def _draw_tool_icon(
             painter.drawLine(28, 22, 21, 29)
         elif badge:
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(BLUE)
+            painter.setBrush(QColor(DARK_COLORS["warning"]) if dark else BLUE)
             painter.drawEllipse(19, 19, 12, 12)
-            painter.setPen(QColor("#ffffff"))
+            painter.setPen(QColor(DARK_COLORS["on_accent"] if dark else "#ffffff"))
             font = painter.font()
             font.setPointSize(7 if len(badge) <= 1 else 6)
             font.setBold(True)
