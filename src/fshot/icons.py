@@ -147,6 +147,14 @@ def tool_icon(
             painter.end()
         pixmap.setDevicePixelRatio(dpr)
         icon.addPixmap(pixmap)
+        # Qt chooses the On representation for checked actions, including
+        # programmatic tool changes, without rebuilding every toolbar icon.
+        active_pixmap = pixmap.copy()
+        active_painter = QPainter(active_pixmap)
+        active_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+        active_painter.fillRect(active_pixmap.rect(), QColor(DARK_COLORS["accent"]) if dark else BLUE)
+        active_painter.end()
+        icon.addPixmap(active_pixmap, QIcon.Mode.Normal, QIcon.State.On)
     return icon
 
 

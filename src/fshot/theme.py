@@ -127,13 +127,13 @@ def _stylesheet(mode: ThemeMode) -> str:
             QToolBar::separator { background: $raised; width: 1px; margin: 11px 2px; }
             QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
             /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
-            QToolBar QToolButton { padding: 6px; }
+            QToolBar QToolButton { padding: 6px; border-radius: 8px; }
             QToolBar QToolButton[lineToolDropdown="true"] { padding: 6px 0px; }
             QToolBar QToolButton[lineToolMain="true"] { border-top-right-radius: 0; border-bottom-right-radius: 0; }
             QToolBar QToolButton[lineToolDropdown="true"] { border-top-left-radius: 0; border-bottom-left-radius: 0; }
             QToolButton::menu-indicator { image: none; width: 0px; }
-            QToolButton:hover { background: $hover; border-color: $border; }
-            QToolButton:checked, QToolButton[lineSelected="true"] { background: $raised; border-color: $accent; }
+            QToolButton:hover, QToolButton:checked, QToolButton[lineSelected="true"] { background: $hover; border-color: transparent; }
+            QToolButton:checked, QToolButton[lineSelected="true"] { color: $accent; }
             QTabWidget::pane { border: 0; }
             QTabWidget::tab-bar { alignment: left; }
             QTabBar::tab { padding: 7px 12px; background: $panel; border: 0; margin-right: 1px; }
@@ -255,12 +255,13 @@ def _stylesheet(mode: ThemeMode) -> str:
         QToolBar::separator { background: #dee2e6; width: 1px; margin: 11px 2px; }
         QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
         /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
-        QToolBar QToolButton { padding: 6px; }
+        QToolBar QToolButton { padding: 6px; border-radius: 8px; }
         QToolBar QToolButton[lineToolDropdown="true"] { padding: 6px 0px; }
         QToolBar QToolButton[lineToolMain="true"] { border-top-right-radius: 0; border-bottom-right-radius: 0; }
         QToolBar QToolButton[lineToolDropdown="true"] { border-top-left-radius: 0; border-bottom-left-radius: 0; }
         QToolButton::menu-indicator { image: none; width: 0px; }
         QToolButton:hover, QToolButton:checked, QToolButton[lineSelected="true"] { background: #e9ecef; border-color: transparent; }
+        QToolButton:checked, QToolButton[lineSelected="true"] { color: #1971c2; }
         QTabWidget::pane { border: 0; }
         QTabWidget::tab-bar { alignment: left; }
         QTabBar::tab { padding: 7px 12px; background: #e9ecef; border: 0; margin-right: 1px; }

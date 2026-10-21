@@ -112,6 +112,7 @@
   - `ShotDocument` 管理頁籤標題、存檔路徑、dirty/unsaved 狀態。
 
 - `icons.py`
+  - 工具圖示提供 `QIcon.State.On` 強調色版本，隨 QAction 選取狀態自動切換；淺色為藍色，深色為螢光綠。沿用原圖的透明度遮罩，保留 1px 筆畫與 DPI 幾何。工具列按鈕使用 8px 圓角，選取時沿用 hover 底色，不繪製選取外框。
   - 程式內自繪 toolbar/system tray icon。
   - `scripts/export_toolbar_icons.py` 同時匯出文件用的淺色圖示（`docs/images/toolbar/`）與深色圖示（`docs/images/toolbar/dark/`）；README 以 `<picture>` 的 `prefers-color-scheme` 選擇版本，並保留帶底色的 `<img>` 備用圖片，兼顧不支援主題切換的 Markdown viewer。
   - 圖示畫布維持 20 × 20px，一般圖案以 16 × 16px 範圍等比例繪製並置中，四邊各保留 2px；非正方形圖案保留原比例。細節較多的鍵盤與另存新檔圖案使用 20px 範圍。畫布外由 34px 按鈕提供各 7px（含邊框）間距；鉛筆圖示另校正其斜向外形造成的垂直偏移。
