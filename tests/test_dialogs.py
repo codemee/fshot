@@ -6,6 +6,56 @@ from PySide6.QtWidgets import QApplication, QPushButton
 
 from fshot.dialogs import MessageDialog
 from fshot.main_window import EditorWindow
+from fshot.theme import ThemeManager, ThemeMode
+
+
+@pytest.mark.parametrize("mode", [ThemeMode.LIGHT, ThemeMode.DARK])
+@pytest.mark.parametrize("kind", ["warning", "information", "question", "unsaved", "update", "capture"])
+@pytest.mark.parametrize("long_message", [False, True])
+def test_message_dialogs_use_content_height(qt_app, tmp_path, monkeypatch, mode, kind, long_message):
+    manager = ThemeManager(qt_app, QSettings(str(tmp_path / "theme.ini"), QSettings.Format.IniFormat))
+    manager.set_mode(mode)
+    parent = EditorWindow(manager)
+    text = ("Details\n" * 80 if long_message else
+            "Native global hotkeys unavailable: [WinError 1409] 快速鍵已登錄。")
+    original_exec = MessageDialog.exec
+    observations = []
+
+    def inspect(dialog):
+        # Reproduce oversized initial geometry, including before app.exec().
+        dialog.resize(560, 2000)
+
+        def record():
+            observations.append((dialog.height(), dialog.body.height(),
+                                 dialog.heading.height(), dialog.body.verticalScrollBar().maximum()))
+            dialog.reject()
+
+        QTimer.singleShot(0, record)
+        return original_exec(dialog)
+
+    monkeypatch.setattr(MessageDialog, "exec", inspect)
+    try:
+        if kind == "unsaved":
+            MessageDialog.unsaved(parent, "未儲存的截圖", text, multiple=True)
+        elif kind in {"update", "capture"}:
+            dialog = MessageDialog(parent)
+            dialog.setText(text)
+            for label in (["Update", "Later", "Skip"] if kind == "update" else ["OK"]):
+                dialog.addButton(label, MessageDialog.ButtonRole.AcceptRole)
+            dialog.exec()
+            dialog.deleteLater()
+        else:
+            getattr(MessageDialog, kind)(parent, "FShot", text)
+        height, body_height, heading_height, scroll_max = observations[0]
+        assert height < (500 if long_message else 300)
+        assert body_height <= 240
+        assert heading_height < 80
+        assert scroll_max > 0 if long_message else scroll_max == 0
+    finally:
+        parent.hide()
+        parent.deleteLater()
+        manager.set_mode(ThemeMode.SYSTEM)
+        manager.deleteLater()
 
 
 @pytest.mark.parametrize("key", [Qt.Key.Key_Escape, Qt.Key.Key_Return])

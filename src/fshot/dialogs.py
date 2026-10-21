@@ -4,7 +4,7 @@ from __future__ import annotations
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPalette, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QDialog, QFrame, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout, QWidget,
+    QDialog, QFrame, QHBoxLayout, QLabel, QMessageBox, QPushButton, QSizePolicy, QTextEdit, QVBoxLayout, QWidget,
 )
 
 from fshot.i18n import LanguageManager
@@ -39,6 +39,7 @@ class MessageDialog(QDialog):
         self.heading.setObjectName("messageHeading")
         self.heading.setTextFormat(Qt.TextFormat.PlainText)
         self.heading.setWordWrap(True)
+        self.heading.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         heading_row.addWidget(self.icon_label, 0, Qt.AlignmentFlag.AlignTop)
         heading_row.addWidget(self.heading, 1)
         layout.addLayout(heading_row)
@@ -55,6 +56,18 @@ class MessageDialog(QDialog):
         self.footer.addStretch()
         layout.addLayout(self.footer)
         self.setIcon(self.Icon.Information)
+
+    def showEvent(self, event) -> None:
+        # Bound the whole dialog, not just the text area. Inherited/native
+        # window geometry must not stretch the header to the screen height.
+        self.ensurePolished()
+        layout = self.layout()
+        layout.activate()
+        width = max(self.minimumWidth(), min(self.maximumWidth(), self.sizeHint().width()))
+        height = layout.totalHeightForWidth(width) if layout.hasHeightForWidth() else layout.sizeHint().height()
+        self.setFixedHeight(height)
+        self.resize(width, height)
+        super().showEvent(event)
 
     def setWindowTitle(self, title: str) -> None:
         super().setWindowTitle(title)
