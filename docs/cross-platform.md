@@ -52,6 +52,7 @@ Windows 延遲操作預覽的手動驗收另需確認：游標在實體螢幕時
 - 無延遲矩形區域及視窗／控制項選取會在 selector 取得焦點前凍結桌面，保留原應用程式中失去焦點即消失的功能表。
 - 使用目前 `NSCursor` 圖像、hotspot 與游標座標貼入截圖。
 - 共用 Qt 剪貼簿、系統匣、編輯器與存檔流程。
+- 啟動時設定 QApplication 層級的相機圖示，讓 uv／uvx 執行時的 Dock 也能顯示 FShot 圖示；macOS 提供 512px 版本供高解析度顯示。
 - 功能表列圖示左鍵雙按開啟主視窗，右鍵顯示選單。macOS 不直接綁定 QSystemTrayIcon 的原生 context menu，避免第一次 mouse-down 開啟選單而阻擋雙按；改由 Context activation 顯示持有的 QMenu。Windows 保留原生右鍵選單。
 
 首次啟動會要求輔助使用權限，首次截圖會要求螢幕錄製權限。從 DMG 安裝時，請在「系統設定 → 隱私權與安全性 → 輔助使用／螢幕錄製」授權 `FShot.app`；透過 `uv`／`uvx` 執行時，授權對象通常是啟動指令的「終端機」、iTerm2、Warp 或 IDE 宿主程式。變更後需完全結束並重新開啟 FShot 或宿主 App。未授予輔助使用權限時，控制項選取與全域快捷鍵不可用；視窗 hit-test 仍會 best-effort fallback。

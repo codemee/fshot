@@ -1,12 +1,31 @@
 from types import SimpleNamespace
 
 import pytest
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QPoint, QSize
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QSystemTrayIcon
 
 import fshot.app as app_module
 from fshot.app import FShotApplication
+from fshot.icons import camera_icon
 from test_app_updates import _controller
+
+
+@pytest.mark.parametrize("platform", ["darwin", "win32", "linux"])
+def test_application_icon_is_set_before_editor_is_shown(qt_app, tmp_path, monkeypatch, platform):
+    monkeypatch.setattr(app_module.sys, "platform", platform)
+    previous_icon = qt_app.windowIcon()
+    qt_app.setWindowIcon(QIcon())
+    try:
+        controller, _updater = _controller(qt_app, tmp_path, monkeypatch)
+        size = 512 if platform == "darwin" else 64
+
+        assert not controller.window.isVisible()
+        assert QSize(size, size) in qt_app.windowIcon().availableSizes()
+        assert (qt_app.windowIcon().pixmap(size, size).toImage()
+                == camera_icon(size).pixmap(size, size).toImage())
+    finally:
+        qt_app.setWindowIcon(previous_icon)
 
 
 @pytest.mark.parametrize("platform", ["darwin", "win32", "linux"])

@@ -30,7 +30,7 @@ from uv_tool_updater import (
 from fshot.dialogs import MessageDialog
 from fshot.capture import CaptureService
 from fshot.virtual_screen import VirtualCaptureSession
-from fshot.icons import tray_icon
+from fshot.icons import camera_icon, tray_icon
 from fshot.hotkeys import HotkeyAction, HotkeyCombination, HotkeyStore, validate_hotkeys
 from fshot.i18n import LanguageManager
 from fshot.main_window import EditorWindow
@@ -171,6 +171,9 @@ class FShotApplication(QObject):
         self.app = app
         self.app.setApplicationName("FShot")
         self.app.setOrganizationName("FShot")
+        # macOS uses the application icon for the Dock, including when run
+        # through uv/uvx without an app bundle. A QWidget icon alone is not enough.
+        self.app.setWindowIcon(camera_icon(512 if sys.platform == "darwin" else 64))
         self.app.setQuitOnLastWindowClosed(False)
         self.packaged = bool(getattr(sys, "frozen", False)) if packaged is None else packaged
         self.update_settings = update_settings if update_settings is not None else QSettings()
