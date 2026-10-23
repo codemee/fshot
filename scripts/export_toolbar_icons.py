@@ -27,7 +27,7 @@ def _export_theme(app: QApplication, destination: Path, *, dark: bool) -> int:
     icons = {name: tool_icon(name, dark=dark) for name in (
         "pen", "rectangle", "measure", "text", "mosaic", "rotate_clockwise",
         "flip_horizontal", "flip_vertical", "resize_down", "undo", "copy",
-        "save", "save_as", "zoom_in", "zoom_out", "keyboard",
+        "save", "save_as", "zoom_in", "zoom_out", "zoom_fit", "keyboard",
     )}
     icons["line"] = tool_icon("line", line_start="circle", line_end="arrow", dark=dark)
     drawing = DrawingSettings.default()

@@ -25,6 +25,7 @@ HANDLE_SIZE = 8
 
 class ImageCanvas(QWidget):
     changed = Signal()
+    zoomChanged = Signal(float)
 
     def __init__(self, image: QImage, settings: DrawingSettings) -> None:
         super().__init__()
@@ -67,9 +68,10 @@ class ImageCanvas(QWidget):
         self.update()
 
     def set_zoom(self, zoom: float) -> None:
-        self.zoom = max(0.1, min(8.0, zoom))
+        self.zoom = max(0.01, min(8.0, zoom))
         self._sync_size()
         self.update()
+        self.zoomChanged.emit(self.zoom)
 
     def zoom_in(self) -> None:
         self.set_zoom(self.zoom + 0.25)

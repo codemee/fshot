@@ -374,6 +374,7 @@ class EditorWindow(QMainWindow):
         canvas = ImageCanvas(qimage, self.settings)
         canvas.set_tool(self.active_tool)
         canvas.changed.connect(self._mark_current_dirty)
+        canvas.zoomChanged.connect(self._update_zoom_display)
         area = QScrollArea()
         _align_scrollbars_to_image(area)
         area.setWidget(canvas)
@@ -524,6 +525,62 @@ class EditorWindow(QMainWindow):
         canvas = self._current_canvas()
         if canvas:
             canvas.set_zoom(1.0)
+
+    def zoom_fit(self) -> None:
+        canvas = self._current_canvas()
+        area = self._current_area()
+        if canvas is None or area is None:
+            return
+        available = area.maximumViewportSize()
+        canvas.set_zoom(min(
+            max(1, available.width() - CANVAS_PADDING * 2) / canvas.image.width(),
+            max(1, available.height() - CANVAS_PADDING * 2) / canvas.image.height(),
+        ))
+        area.horizontalScrollBar().setValue(0)
+        area.verticalScrollBar().setValue(0)
+
+    def _update_zoom_display(self, _zoom: float | None = None) -> None:
+        canvas = self._current_canvas()
+        percent = f"{canvas.zoom * 100:.0f}" if canvas else "—"
+        self.zoom_percent_action.setText(f"{percent}%" if canvas else percent)
+        self.zoom_percent_action.setToolTip(self._tr("zoom_percent", percent=percent))
+
+    def _show_zoom_panel(self) -> None:
+        canvas = self._current_canvas()
+        if canvas is None:
+            return
+        menu = ReturnSubmitMenu(self)
+        menu.setObjectName("zoomPercentMenu")
+        panel = QWidget(menu)
+        layout = QHBoxLayout(panel)
+        layout.setContentsMargins(12, 10, 12, 10)
+        label = QLabel(self._tr("zoom_value"))
+        percent = ArrowSpinBox()
+        percent.setObjectName("zoomPercentSpin")
+        percent.setRange(1, 800)
+        percent.setSuffix(" %")
+        percent.setValue(round(canvas.zoom * 100))
+        # Leave room for three digits, the suffix, and the custom arrow column.
+        percent.setMinimumWidth(110)
+        apply_button = QPushButton(self._tr("zoom_apply"))
+        apply_button.setObjectName("zoomApplyButton")
+        layout.addWidget(label)
+        layout.addWidget(percent)
+        layout.addWidget(apply_button)
+        action = QWidgetAction(menu)
+        action.setDefaultWidget(panel)
+        menu.addAction(action)
+
+        def apply_zoom() -> None:
+            canvas.set_zoom(percent.value() / 100)
+            menu.close()
+
+        apply_button.clicked.connect(apply_zoom)
+        menu.submitted.connect(apply_zoom)
+        percent.setFocus()
+        percent.selectAll()
+        menu.exec(self.mapToGlobal(self._toolbar_anchor(self.zoom_percent_action)))
+        menu.deleteLater()
 
     def rotate_current_clockwise(self) -> None:
         canvas = self._current_canvas()
@@ -707,6 +764,14 @@ class EditorWindow(QMainWindow):
         self.zoom_reset_action.triggered.connect(self.zoom_reset)
         self.addAction(self.zoom_reset_action)
 
+        self.zoom_fit_action = QAction(tool_icon("zoom_fit"), self._tr("zoom_fit"), self)
+        self.zoom_fit_action.triggered.connect(self.zoom_fit)
+        toolbar.addAction(self.zoom_fit_action)
+        self.zoom_percent_action = QAction(self)
+        self.zoom_percent_action.triggered.connect(self._show_zoom_panel)
+        toolbar.addAction(self.zoom_percent_action)
+        toolbar.addSeparator()
+
         self.cursor_action = QAction(tool_icon("cursor", checked=False), "Include cursor", self)
         self.cursor_action.setCheckable(True)
         self.cursor_action.toggled.connect(self._set_include_cursor)
@@ -743,6 +808,12 @@ class EditorWindow(QMainWindow):
             if isinstance(button, QToolButton):
                 button.setFixedSize(TOOLBAR_BUTTON_SIZE)
         self.line_button.setFixedSize(TOOLBAR_BUTTON_SIZE)
+        self.zoom_percent_button = toolbar.widgetForAction(self.zoom_percent_action)
+        # Reserve three digits and a percent sign, with the same 7 px per side
+        # (6 px padding + 1 px border) as the icon buttons.
+        metrics = self.zoom_percent_button.fontMetrics()
+        digit = max("0123456789", key=metrics.horizontalAdvance)
+        self.zoom_percent_button.setFixedWidth(metrics.horizontalAdvance(digit * 3 + "%") + 14)
         self.line_end_button.setFixedSize(TOOLBAR_DROPDOWN_SIZE)
         self.line_tool_group.setFixedSize(
             TOOLBAR_BUTTON_SIZE.width() + TOOLBAR_DROPDOWN_SIZE.width(),
@@ -1551,6 +1622,9 @@ class EditorWindow(QMainWindow):
         self.zoom_in_action.setEnabled(has_doc)
         self.zoom_out_action.setEnabled(has_doc)
         self.zoom_reset_action.setEnabled(has_doc)
+        self.zoom_fit_action.setEnabled(has_doc)
+        self.zoom_percent_action.setEnabled(has_doc)
+        self._update_zoom_display()
         self.close_tab_action.setEnabled(has_doc)
         self.next_tab_action.setEnabled(self.tabs.count() > 1)
         self.previous_tab_action.setEnabled(self.tabs.count() > 1)
@@ -1628,6 +1702,7 @@ class EditorWindow(QMainWindow):
             (self.zoom_in_action, "zoom_in"),
             (self.zoom_out_action, "zoom_out"),
             (self.zoom_reset_action, "reset_zoom"),
+            (self.zoom_fit_action, "zoom_fit"),
             (self.delay_action, "delay"),
             (self.hotkey_action, "capture_shortcuts"),
             (self.next_tab_action, "next_tab"),
@@ -1689,6 +1764,7 @@ class EditorWindow(QMainWindow):
             (self.save_as_action, "save_as"),
             (self.zoom_in_action, "zoom_in"),
             (self.zoom_out_action, "zoom_out"),
+            (self.zoom_fit_action, "zoom_fit"),
             (self.hotkey_action, "keyboard"),
         ):
             action.setIcon(tool_icon(name, dark=dark))

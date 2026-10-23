@@ -47,7 +47,7 @@ def test_editor_toolbar_uses_compact_buttons(qt_app):
     assert all(
         button.size() == QSize(34, 34)
         for button in buttons
-        if button is not line_end_button
+        if button is not line_end_button and button.defaultAction() is not window.zoom_percent_action
     )
     assert window.measure_action.shortcut() == QKeySequence("Alt+D")
     assert window.rotate_action.shortcut() == QKeySequence("Alt+C")
@@ -452,15 +452,20 @@ def test_rename_preserves_dirty_state_and_does_not_replace_existing_file(
         QImage(6, 5, QImage.Format.Format_ARGB32), source.name, path=source, dirty=True
     )
 
-    window.rename_current()
-    window._tab_name_editor.setText("existing")
-    window._commit_tab_rename()
+    try:
+        window.rename_current()
+        window._tab_name_editor.setText("existing")
+        window._commit_tab_rename()
 
-    assert source.exists()
-    assert existing.read_bytes() == b"existing"
-    assert window.documents[0].path == source
-    assert window.documents[0].is_dirty
-    assert warnings
+        assert source.exists()
+        assert existing.read_bytes() == b"existing"
+        assert window.documents[0].path == source
+        assert window.documents[0].is_dirty
+        assert warnings
+    finally:
+        window._cancel_tab_rename()
+        window.hide()
+        window.deleteLater()
 
 
 def test_rename_shortcut_matches_platform_file_manager(qt_app, monkeypatch):

@@ -39,6 +39,7 @@ _TOOL_BOUNDS = {
     "save_as": (6, 5, 18, 22),
     "zoom_in": (8, 8, 18, 18),
     "zoom_out": (8, 8, 18, 18),
+    "zoom_fit": (5, 5, 22, 22),
     "cursor": (9, 6, 14, 21),
     "delay": (8, 5, 16, 19),
     "keyboard": (4, 8, 24, 17),
@@ -371,6 +372,11 @@ def _draw_tool_icon(
     elif name == "zoom_out":
         _draw_magnifier(painter)
         painter.drawLine(11, 15, 19, 15)
+    elif name == "zoom_fit":
+        for x, y, dx, dy in ((5, 5, 1, 1), (27, 5, -1, 1), (5, 27, 1, -1), (27, 27, -1, -1)):
+            painter.drawLine(x, y, x + dx * 6, y)
+            painter.drawLine(x, y, x, y + dy * 6)
+        painter.drawRect(11, 11, 10, 10)
     elif name == "cursor":
         path = QPainterPath(QPoint(9, 6))
         path.lineTo(23, 19)
