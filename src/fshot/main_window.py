@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSlider,
+    QSizePolicy,
     QSpinBox,
     QStyle,
     QStyledItemDelegate,
@@ -791,7 +792,12 @@ class EditorWindow(QMainWindow):
         )
         self._set_screen_mode(self.screen_mode_action.isChecked())
 
+        self.toolbar_right_spacer = QWidget()
+        self.toolbar_right_spacer.setObjectName("toolbarRightSpacer")
+        self.toolbar_right_spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        toolbar.addWidget(self.toolbar_right_spacer)
         toolbar.addSeparator()
+
         self.hotkey_action = QAction(tool_icon("keyboard"), "Capture shortcuts", self)
         self.hotkey_action.triggered.connect(self._show_hotkey_panel)
         toolbar.addAction(self.hotkey_action)
@@ -830,6 +836,8 @@ class EditorWindow(QMainWindow):
                 separator_pending = bool(menu.actions())
                 continue
             widget = toolbar.widgetForAction(action)
+            if widget is self.toolbar_right_spacer:
+                continue
             if not action.isVisible() or widget is None or widget.isVisible():
                 continue
             if separator_pending:

@@ -48,6 +48,8 @@ When installed with `uv tool install`, FShot checks PyPI in the background at mo
 
 FShot starts with its editor hidden and remains in the system tray. Double-click the tray icon to show the editor; use the tray context menu to exit.
 
+Shortcut settings, theme, and language form a group at the right edge of the toolbar, separated from the other tools. They remain available through the overflow menu in narrow windows.
+
 The theme button cycles through Follow System, Light, and Dark. Dark mode uses an Evangelion Unit-01-inspired purple and lime palette. The language button cycles through Follow System, Traditional Chinese, and English. Both choices are persisted. Toolbar tooltips follow the selected language and include shortcuts where available.
 
 Selected state buttons use the hover background and accent-colored icons: blue in light mode and lime in dark mode, making active tools and options easy to identify.

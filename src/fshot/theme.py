@@ -124,7 +124,7 @@ def _stylesheet(mode: ThemeMode) -> str:
         return Template("""
             QMainWindow, QDialog { background: $window; }
             QToolBar { background: $panel; border: 0; border-bottom: 1px solid $raised; spacing: 4px; padding: 0px 4px; }
-            QToolBar::separator { background: $raised; width: 1px; margin: 11px 2px; }
+            QToolBar::separator { background: $raised; width: 1px; margin: 8px 2px; }
             QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
             /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
             QToolBar QToolButton { padding: 6px; border-radius: 8px; }
@@ -252,7 +252,7 @@ def _stylesheet(mode: ThemeMode) -> str:
     return """
         QMainWindow { background: #f8f9fa; }
         QToolBar { background: #ffffff; border: 0; border-bottom: 1px solid #dee2e6; spacing: 4px; padding: 0px 4px; }
-        QToolBar::separator { background: #dee2e6; width: 1px; margin: 11px 2px; }
+        QToolBar::separator { background: #dee2e6; width: 1px; margin: 8px 2px; }
         QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
         /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
         QToolBar QToolButton { padding: 6px; border-radius: 8px; }
