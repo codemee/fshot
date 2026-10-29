@@ -6,6 +6,8 @@ Most FShot UI code uses reusable PySide6 components. Capture, global shortcuts, 
 
 Themes are shared through `ThemeManager` and Qt system color hints. Language is shared through `LanguageManager`; macOS prioritizes `AppleLanguages`, while other platforms use the Qt locale. Tab close buttons follow platform placement and use FShot's high-contrast icon. Windows places the dirty marker left of the title.
 
+About opens from the title-bar icon's system menu on Windows and the native application menu through Qt's AboutRole on macOS. On a Mac, verify FShot → About FShot, availability while the editor is hidden, and language changes. Both platforms share version and GPL-3.0-or-later license information.
+
 Image drag/drop and paste use Qt `QMimeData`, `QUrl`, and clipboard APIs. On macOS, verify Finder local-file URLs, HEIC/HEIF decoder availability, and source-file write access in sandboxed builds.
 
 ## Current Platform State

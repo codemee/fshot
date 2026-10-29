@@ -50,6 +50,8 @@ FShot starts with its editor hidden and remains in the system tray. Double-click
 
 Shortcut settings, theme, and language form a group at the right edge of the toolbar, separated from the other tools. They remain available through the overflow menu in narrow windows.
 
+Below the toolbar, a flat tab row and a thin content frame share aligned horizontal edges. Native Qt arrow buttons scroll overflowing tabs; small squares continue to mark unsaved changes.
+
 The theme button cycles through Follow System, Light, and Dark. Dark mode uses an Evangelion Unit-01-inspired purple and lime palette. The language button cycles through Follow System, Traditional Chinese, and English. Both choices are persisted. Toolbar tooltips follow the selected language and include shortcuts where available.
 
 Selected state buttons use the hover background and accent-colored icons: blue in light mode and lime in dark mode, making active tools and options easy to identify.
@@ -122,3 +124,9 @@ Before closing tabs, closing the editor, quitting, or updating, unsaved screensh
 - [Virtual Screen Capture Guide](docs/virtual-screen.en.md)
 
 For contributions, see the [Development Guide](docs/development.en.md), including links to architecture, platform notes, and packaging documentation.
+
+## License
+
+FShot is licensed under the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**. See [LICENSE](LICENSE) for the full terms. Third-party components retain their respective licenses.
+
+View version and license information in About FShot: open the title-bar icon's system menu on Windows, or choose FShot → About FShot in the macOS menu bar.

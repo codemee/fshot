@@ -3,6 +3,8 @@ name = "fshot"
 version = "0.1.4"
 description = "Keyboard-first cross-platform screenshot utility"
 readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "comtypes>=1.4.16; sys_platform == 'win32'",

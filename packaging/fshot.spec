@@ -19,7 +19,7 @@ analysis = Analysis(
     [str(ROOT / "src" / "fshot" / "__main__.py")],
     pathex=[str(ROOT / "src")],
     binaries=[],
-    datas=copy_metadata("fshot"),
+    datas=copy_metadata("fshot") + [(str(ROOT / "LICENSE"), ".")],
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},

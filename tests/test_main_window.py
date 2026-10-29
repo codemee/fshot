@@ -91,7 +91,7 @@ def test_toolbar_and_icon_have_exact_outer_gaps(qt_app):
                 assert top == 4
                 assert toolbar.height() - top - button.height() == 4
             button = toolbar.widgetForAction(window.pen_action)
-            assert button.x() == 4
+            assert button.x() == 12
             image = button.grab().toImage()
             pixels = [(x, y) for y in range(image.height()) for x in range(image.width())
                       if image.pixelColor(x, y) == QColor("#ff0000")]
@@ -132,7 +132,7 @@ def test_narrow_toolbar_opens_centered_overflow_menu(qt_app):
         assert toolbar.height() == 42
         assert extension.isVisible()
         assert extension.height() == 34
-        assert toolbar.width() - extension.geometry().right() - 1 == 4
+        assert toolbar.width() - extension.geometry().right() - 1 == 12
         assert abs(extension.geometry().center().y() - toolbar.rect().center().y()) <= 1
         assert not toolbar.widgetForAction(window.zoom_out_action).isVisible()
         QTimer.singleShot(0, choose_hidden_action)

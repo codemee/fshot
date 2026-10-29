@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import string
 import sys
+from ctypes import wintypes
 from collections.abc import Callable
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import QEvent, QPoint, QRect, QSettings, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPoint, QRect, QSettings, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
@@ -31,6 +32,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QMenu,
+    QMenuBar,
     QPushButton,
     QScrollArea,
     QSlider,
@@ -58,6 +60,14 @@ from fshot.i18n import LanguageManager, LanguageMode
 from fshot.qt_image import pil_to_qimage
 from fshot.settings import CaptureMode, CaptureSettings, DrawingSettings, LineEndStyle, Tool
 from fshot.theme import ThemeManager, ThemeMode
+
+if sys.platform == "win32":
+    import win32con
+    import win32gui
+else:
+    win32con = win32gui = None
+
+ABOUT_SYSTEM_COMMAND = 0x1FF0
 
 IMAGE_SUFFIXES = {
     ".bmp",
@@ -105,7 +115,7 @@ class EditorToolBar(QToolBar):
         if event.type() in (QEvent.Type.Resize, QEvent.Type.LayoutRequest, QEvent.Type.Show):
             extension = self.findChild(QToolButton, "qt_toolbar_ext_button")
             if extension is not None:
-                extension.move(self.width() - extension.width() - 4,
+                extension.move(self.width() - extension.width() - 12,
                                (self.height() - extension.height()) // 2)
         return result
 
@@ -294,13 +304,20 @@ class EditorWindow(QMainWindow):
         self._resize_percent = 50
         self.active_tool = Tool.PEN
         self.tabs = QTabWidget()
+        self.tabs.setObjectName("editorTabs")
         self.tabs.setTabsClosable(True)
         self.tabs.setUsesScrollButtons(True)
         self.tabs.tabBar().setExpanding(False)
         self.tabs.currentChanged.connect(self._current_changed)
         self.tabs.tabCloseRequested.connect(self._close_tab)
         self.tabs.tabBarDoubleClicked.connect(self._start_tab_rename)
-        self.setCentralWidget(self.tabs)
+        workspace = QWidget()
+        workspace.setObjectName("editorWorkspace")
+        workspace_layout = QVBoxLayout(workspace)
+        workspace_layout.setContentsMargins(12, 8, 12, 12)
+        workspace_layout.setSpacing(0)
+        workspace_layout.addWidget(self.tabs)
+        self.setCentralWidget(workspace)
         self.documents: dict[int, ShotDocument] = {}
         self._rename_tab_index: int | None = None
         self._rename_commit_active = False
@@ -320,6 +337,7 @@ class EditorWindow(QMainWindow):
         self.tabs.setCornerWidget(self.tab_menu_button, Qt.Corner.TopRightCorner)
         self._build_tab_shortcuts()
         self._build_toolbar()
+        self._build_about_menu()
         self.theme_manager.changed.connect(self._theme_changed)
         self.language_manager.changed.connect(self._language_changed)
         self._retranslate_ui()
@@ -637,6 +655,51 @@ class EditorWindow(QMainWindow):
             self.hiddenByMinimize.emit()
         super().changeEvent(event)
 
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self._update_system_menu()
+
+    def _update_system_menu(self) -> None:
+        if (sys.platform != "win32" or win32gui is None
+                or QApplication.platformName() != "windows" or self.windowHandle() is None):
+            return
+        menu = win32gui.GetSystemMenu(int(self.windowHandle().winId()), False)
+        if not menu:
+            return
+        label = self._tr("about_fshot")
+        if any(win32gui.GetMenuItemID(menu, i) == ABOUT_SYSTEM_COMMAND
+               for i in range(win32gui.GetMenuItemCount(menu))):
+            win32gui.ModifyMenu(menu, ABOUT_SYSTEM_COMMAND, win32con.MF_BYCOMMAND | win32con.MF_STRING,
+                                ABOUT_SYSTEM_COMMAND, label)
+        else:
+            win32gui.AppendMenu(menu, win32con.MF_SEPARATOR, 0, "")
+            win32gui.AppendMenu(menu, win32con.MF_STRING, ABOUT_SYSTEM_COMMAND, label)
+
+    def nativeEvent(self, event_type, message):
+        if sys.platform == "win32" and win32gui is not None:
+            msg = wintypes.MSG.from_address(int(message))
+            if msg.message == win32con.WM_SYSCOMMAND and (msg.wParam & 0xFFF0) == ABOUT_SYSTEM_COMMAND:
+                QTimer.singleShot(0, self._show_about)
+                return True, 0
+        return super().nativeEvent(event_type, message)
+
+    def _show_about(self) -> None:
+        MessageDialog.information(self, self._tr("about_fshot"), self._tr("about_details", version=__version__))
+
+    def _build_about_menu(self) -> None:
+        self.about_action = QAction(self._tr("about_fshot"), self)
+        self.about_action.setMenuRole(QAction.MenuRole.AboutRole)
+        self.about_action.triggered.connect(self._show_about)
+        self.application_menu_bar = None
+        if sys.platform == "darwin":
+            # A parentless native menu bar remains available with the editor
+            # hidden in the tray. Cocoa moves AboutRole into the FShot menu.
+            self.application_menu_bar = QMenuBar()
+            self.application_menu_bar.setNativeMenuBar(True)
+            self.about_menu = self.application_menu_bar.addMenu(self._tr("help_menu"))
+            self.about_menu.addAction(self.about_action)
+            self.destroyed.connect(self.application_menu_bar.deleteLater)
+
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         self._update_tab_overflow()
@@ -650,6 +713,16 @@ class EditorWindow(QMainWindow):
         # Reserve 4 px above and below the fixed-size button backgrounds.
         toolbar.setFixedHeight(TOOLBAR_BUTTON_SIZE.height() + 8)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
+        self.toolbar_edge_spacers = []
+
+        def add_edge_space() -> None:
+            spacer = QWidget()
+            # 4 px toolbar inset + 4 px spacer + 4 px action gap = 12 px.
+            spacer.setFixedWidth(4)
+            toolbar.addWidget(spacer)
+            self.toolbar_edge_spacers.append(spacer)
+
+        add_edge_space()
         self.tool_group = QActionGroup(self)
         self.tool_group.setExclusive(True)
 
@@ -809,6 +882,7 @@ class EditorWindow(QMainWindow):
         self.language_action = QAction(tool_icon("language", badge="system"), "Language", self)
         self.language_action.triggered.connect(self._cycle_language)
         toolbar.addAction(self.language_action)
+        add_edge_space()
         for action in toolbar.actions():
             button = toolbar.widgetForAction(action)
             if isinstance(button, QToolButton):
@@ -836,7 +910,7 @@ class EditorWindow(QMainWindow):
                 separator_pending = bool(menu.actions())
                 continue
             widget = toolbar.widgetForAction(action)
-            if widget is self.toolbar_right_spacer:
+            if widget is self.toolbar_right_spacer or widget in self.toolbar_edge_spacers:
                 continue
             if not action.isVisible() or widget is None or widget.isVisible():
                 continue
@@ -1726,6 +1800,10 @@ class EditorWindow(QMainWindow):
             action.setText(label)
             action.setToolTip(self._tooltip_with_shortcuts(label, action))
         self.line_end_button.setToolTip(self._tr("line_end_settings"))
+        self._update_system_menu()
+        self.about_action.setText(self._tr("about_fshot"))
+        if self.application_menu_bar is not None:
+            self.about_menu.setTitle(self._tr("help_menu"))
         self._refresh_line_end_panel()
         self.tab_menu_button.setToolTip(self._tr("open_tabs"))
         self.cursor_action.setText(self._tr("include_cursor"))

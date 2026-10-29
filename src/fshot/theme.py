@@ -123,7 +123,10 @@ def _stylesheet(mode: ThemeMode) -> str:
     if mode == ThemeMode.DARK:
         return Template("""
             QMainWindow, QDialog { background: $window; }
-            QToolBar { background: $panel; border: 0; border-bottom: 1px solid $raised; spacing: 4px; padding: 0px 4px; }
+            QWidget#editorWorkspace { background: $window; }
+            QTabWidget#editorTabs { background: transparent; }
+            QTabWidget#editorTabs::pane { background: $base; border: 1px solid $raised; border-radius: 6px; }
+            QToolBar { background: $window; border: 0; border-bottom: 1px solid $raised; spacing: 4px; padding: 0px 4px; }
             QToolBar::separator { background: $raised; width: 1px; margin: 8px 2px; }
             QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
             /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
@@ -136,7 +139,10 @@ def _stylesheet(mode: ThemeMode) -> str:
             QToolButton:checked, QToolButton[lineSelected="true"] { color: $accent; }
             QTabWidget::pane { border: 0; }
             QTabWidget::tab-bar { alignment: left; }
-            QTabBar::tab { padding: 7px 12px; background: $panel; border: 0; margin-right: 1px; }
+            QTabBar::scroller { width: 56px; }
+            QTabBar QToolButton { padding: 0; border: 0; border-radius: 0; background: $window; }
+            QTabBar QToolButton:hover { background: $hover; }
+            QTabBar::tab { padding: 7px 12px; background: $window; border: 0; margin-right: 1px; }
             QTabBar::tab:!selected:hover { background: $hover; }
             QTabBar::tab:selected { background: $raised; color: $text; border-bottom: 2px solid $accent; }
             QScrollArea { background: $base; border: 0; }
@@ -250,8 +256,12 @@ def _stylesheet(mode: ThemeMode) -> str:
             QDialog#messageDialog QPushButton[dialogRole="destructive"]:focus { border-color: $warning; }
         """).substitute(DARK_COLORS)
     return """
-        QMainWindow { background: #f8f9fa; }
-        QToolBar { background: #ffffff; border: 0; border-bottom: 1px solid #dee2e6; spacing: 4px; padding: 0px 4px; }
+        QMainWindow { background: #f5f6f8; }
+        QWidget#editorWorkspace { background: #f5f6f8; }
+        QTabWidget#editorTabs { background: transparent; }
+        QTabWidget#editorTabs::pane { background: #f5f6f8; border: 1px solid #d6d8dc; border-radius: 6px; }
+        QTabWidget#editorTabs QScrollArea { background: #f5f6f8; }
+        QToolBar { background: #f5f6f8; border: 0; border-bottom: 1px solid #d6d8dc; spacing: 4px; padding: 0px 4px; }
         QToolBar::separator { background: #dee2e6; width: 1px; margin: 8px 2px; }
         QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
         /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
@@ -264,7 +274,11 @@ def _stylesheet(mode: ThemeMode) -> str:
         QToolButton:checked, QToolButton[lineSelected="true"] { color: #1971c2; }
         QTabWidget::pane { border: 0; }
         QTabWidget::tab-bar { alignment: left; }
-        QTabBar::tab { padding: 7px 12px; background: #e9ecef; border: 0; margin-right: 1px; }
+        QTabBar::scroller { width: 56px; }
+        QTabBar QToolButton { padding: 0; border: 0; border-radius: 0; background: #f5f6f8; }
+        QTabBar QToolButton:hover { background: #e9ecef; }
+        QTabBar::tab { padding: 7px 12px; background: #f5f6f8; border: 0; margin-right: 1px; }
+        QTabBar::tab:!selected:hover { background: #f1f3f5; }
         QTabBar::tab:selected { background: #ffffff; border-bottom: 2px solid #1971c2; }
         QScrollArea { background: #ced4da; border: 0; }
         QScrollBar:vertical { background: #dee2e6; width: 12px; margin: 0; }
