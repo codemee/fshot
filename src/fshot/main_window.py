@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import QEvent, QPoint, QRect, QSettings, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QSettings, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
@@ -18,6 +18,7 @@ from PySide6.QtGui import (
     QPalette,
     QPen,
     QPixmap,
+    QPainterPath,
 )
 from PySide6.QtWidgets import (
     QAbstractButton,
@@ -34,11 +35,14 @@ from PySide6.QtWidgets import (
     QMenu,
     QMenuBar,
     QPushButton,
+    QProxyStyle,
     QScrollArea,
     QSlider,
     QSizePolicy,
     QSpinBox,
     QStyle,
+    QStyleFactory,
+    QStyleOptionToolButton,
     QStyledItemDelegate,
     QStyleOptionViewItem,
     QTabBar,
@@ -87,6 +91,66 @@ TOOLBAR_ICON_SIZE = QSize(20, 20)
 TOOLBAR_BUTTON_SIZE = QSize(34, 34)
 TOOLBAR_DROPDOWN_SIZE = QSize(20, 34)
 LINE_END_STYLE_ICON_SIZE = QSize(64, 24)
+
+
+class TabNavigationStyle(QProxyStyle):
+    """Let Qt reserve scroll space at opposite ends of the tab row."""
+
+    def subElementRect(self, element, option, widget=None):
+        if element in (QStyle.SubElement.SE_TabBarScrollLeftButton,
+                       QStyle.SubElement.SE_TabBarScrollRightButton):
+            rect = QRect(option.rect)
+            if element == QStyle.SubElement.SE_TabBarScrollRightButton:
+                rect.setLeft(rect.right() - 27)
+            else:
+                rect.setWidth(28)
+            return rect
+        return super().subElementRect(element, option, widget)
+
+
+def _paint_tab_navigation(button: QToolButton, direction: str) -> None:
+    option = QStyleOptionToolButton()
+    button.initStyleOption(option)
+    option.arrowType = Qt.ArrowType.NoArrow
+    option.features = QStyleOptionToolButton.ToolButtonFeature.None_
+    option.icon = QIcon()
+    painter = QPainter(button)
+    button.style().drawComplexControl(QStyle.ComplexControl.CC_ToolButton, option, painter, button)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    group = QPalette.ColorGroup.Active if button.isEnabled() else QPalette.ColorGroup.Disabled
+    painter.setPen(QPen(button.palette().color(group, QPalette.ColorRole.ButtonText), 1.0,
+                        Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+    points = {"left": ((2, -4), (-2, 0), (2, 4)),
+              "right": ((-2, -4), (2, 0), (-2, 4)),
+              "down": ((-4, -2), (0, 2), (4, -2))}[direction]
+    center = QPointF(button.rect().center())
+    path = QPainterPath(center + QPointF(*points[0]))
+    for point in points[1:]:
+        path.lineTo(center + QPointF(*point))
+    painter.drawPath(path)
+    painter.end()
+
+
+class TabMenuButton(QToolButton):
+    def paintEvent(self, event) -> None:
+        _paint_tab_navigation(self, "down")
+
+
+class EditorTabBar(QTabBar):
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        # Own a separate base style; QProxyStyle takes ownership of it.
+        self.navigation_style = TabNavigationStyle(QStyleFactory.create(QApplication.style().objectName()))
+        self.navigation_style.setParent(self)
+        self.setStyle(self.navigation_style)
+        for name in ("ScrollLeftButton", "ScrollRightButton"):
+            self.findChild(QToolButton, name).installEventFilter(self)
+
+    def eventFilter(self, watched, event) -> bool:
+        if event.type() == QEvent.Type.Paint and isinstance(watched, QToolButton):
+            _paint_tab_navigation(watched, "left" if watched.objectName() == "ScrollLeftButton" else "right")
+            return True
+        return super().eventFilter(watched, event)
 
 
 class EditorToolBar(QToolBar):
@@ -304,9 +368,12 @@ class EditorWindow(QMainWindow):
         self._resize_percent = 50
         self.active_tool = Tool.PEN
         self.tabs = QTabWidget()
+        self.tabs.setTabBar(EditorTabBar(self.tabs))
         self.tabs.setObjectName("editorTabs")
         self.tabs.setTabsClosable(True)
         self.tabs.setUsesScrollButtons(True)
+        # macOS otherwise elides labels to fit before showing scroll buttons.
+        self.tabs.setElideMode(Qt.TextElideMode.ElideNone)
         self.tabs.tabBar().setExpanding(False)
         self.tabs.currentChanged.connect(self._current_changed)
         self.tabs.tabCloseRequested.connect(self._close_tab)
@@ -326,8 +393,9 @@ class EditorWindow(QMainWindow):
         self._tab_name_editor.hide()
         self._tab_name_editor.accepted.connect(self._commit_tab_rename)
         self._tab_name_editor.cancelled.connect(self._cancel_tab_rename)
-        self.tab_menu_button = QToolButton()
-        self.tab_menu_button.setArrowType(Qt.ArrowType.DownArrow)
+        self.tab_menu_button = TabMenuButton()
+        self.tab_menu_button.setObjectName("tabMenuButton")
+        self.tab_menu_button.setFixedWidth(28)
         self.tab_menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.tab_menu_button.setAutoRaise(True)
         self.tab_menu_button.setToolTip("Open tabs")
@@ -702,7 +770,8 @@ class EditorWindow(QMainWindow):
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
-        self._update_tab_overflow()
+        # Child geometry is updated after the main window's resize event.
+        QTimer.singleShot(0, self._update_tab_overflow)
 
     def _build_toolbar(self) -> None:
         toolbar = EditorToolBar("Tools")
@@ -1878,7 +1947,9 @@ class EditorWindow(QMainWindow):
 
     def _update_tab_overflow(self) -> None:
         tab_bar = self.tabs.tabBar()
-        total_width = sum(tab_bar.tabRect(i).width() for i in range(tab_bar.count()))
+        # Laid-out tab rectangles can shrink and depend on the corner button's
+        # visibility. The natural width keeps the overflow decision stable.
+        total_width = tab_bar.sizeHint().width()
         available = max(0, self.tabs.width() - 8)
         self.tab_menu_button.setVisible(total_width > available and self.tabs.count() > 0)
         self._position_tab_name_editor()

@@ -50,7 +50,7 @@ FShot starts with its editor hidden and remains in the system tray. Double-click
 
 Shortcut settings, theme, and language form a group at the right edge of the toolbar, separated from the other tools. They remain available through the overflow menu in narrow windows.
 
-Below the toolbar, a flat tab row and a thin content frame share aligned horizontal edges. Native Qt arrow buttons scroll overflowing tabs; small squares continue to mark unsaved changes.
+Below the toolbar, a flat tab row and a thin content frame share aligned horizontal edges. Thin chevrons at opposite ends of the tab row scroll overflowing tabs, and a downward chevron on the right opens the tab list. Both Windows and macOS retain full tab labels. Small squares continue to mark unsaved changes.
 
 The theme button cycles through Follow System, Light, and Dark. Dark mode uses an Evangelion Unit-01-inspired purple and lime palette. The language button cycles through Follow System, Traditional Chinese, and English. Both choices are persisted. Toolbar tooltips follow the selected language and include shortcuts where available.
 

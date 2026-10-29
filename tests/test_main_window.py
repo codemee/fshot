@@ -16,6 +16,71 @@ from fshot.canvas import CANVAS_PADDING
 from fshot.main_window import _align_scrollbars_to_image
 
 
+def test_tab_overflow_controls_scroll_select_and_follow_window_width(qt_app):
+    from fshot.main_window import EditorWindow
+    from fshot.theme import ThemeMode
+
+    window = EditorWindow()
+    original_mode = window.theme_manager.mode
+    try:
+        for mode in (ThemeMode.LIGHT, ThemeMode.DARK):
+            window.theme_manager.set_mode(mode)
+            window.resize(900, 600)
+            window.show()
+            for i in range(6):
+                window._add_image(QImage(5, 5, QImage.Format.Format_ARGB32), f"26-10-29-1430{i:02d}")
+                qt_app.processEvents()
+            bar = window.tabs.tabBar()
+            left = bar.findChild(QToolButton, "ScrollLeftButton")
+            right = bar.findChild(QToolButton, "ScrollRightButton")
+
+            assert left.isVisible() and right.isVisible()
+            assert left.x() == 0
+            assert right.geometry().right() == bar.width() - 1
+            assert not left.geometry().intersects(right.geometry())
+            assert left.isEnabled() and not right.isEnabled()
+            assert bar.tabRect(5).right() < right.x()
+            assert window.tab_menu_button.isVisible()
+            assert window.tab_menu_button.mapTo(window.tabs, QPoint()).x() > bar.geometry().right()
+            assert len(window.tab_menu.actions()) == 6
+            before = bar.tabRect(0).left()
+            left.click()
+            assert bar.tabRect(0).left() > before
+            window.tab_menu.actions()[0].trigger()
+            assert window.tabs.currentIndex() == 0
+            assert bar.tabRect(0).left() > left.geometry().right()
+            assert not left.isEnabled() and right.isEnabled()
+            before = bar.tabRect(0).left()
+            right.click()
+            assert bar.tabRect(0).left() < before
+            for _ in range(bar.count() + 1):
+                if right.isEnabled():
+                    right.click()
+            assert not right.isEnabled()
+            assert bar.tabRect(5).right() < right.x()
+
+            window.resize(1800, 600)
+            qt_app.processEvents()
+            qt_app.processEvents()
+            assert not left.isVisible() and not right.isVisible()
+            assert not window.tab_menu_button.isVisible()
+            window.resize(900, 600)
+            qt_app.processEvents()
+            qt_app.processEvents()
+            assert left.isVisible() and right.isVisible()
+            assert window.tab_menu_button.isVisible()
+
+            window._discard_all_tabs()
+            qt_app.processEvents()
+            assert not window.tab_menu_button.isVisible()
+            assert not left.isVisible() and not right.isVisible()
+    finally:
+        window.hide()
+        window.theme_manager.set_mode(original_mode)
+        window.deleteLater()
+        qt_app.processEvents()
+
+
 def test_editor_window_title_includes_installed_version(qt_app):
     from fshot.main_window import EditorWindow
 

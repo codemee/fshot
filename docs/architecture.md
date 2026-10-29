@@ -85,7 +85,8 @@
   - 視窗標題會從已安裝套件 metadata 顯示目前版本，並在有文件時附加目前頁籤名稱。
   - 工具列使用 20px 圖示與 34px 固定按鈕，高度固定為 42px，讓按鈕上下各保留 4px 留白，避免 hover 底色貼住標籤頁；畫線按鈕旁另有 20px 寬的端點樣式下拉按鈕。
   - 工具列左右各保留 12px，對齊下方圖片區細框；窄視窗的三點按鈕也距右側 12px。兩端固定留白元件補足水平間距，保持按鈕上下各 4px；排版空白不進入功能表。三點功能表左右各增加 8px 留白，避免工具圖示貼近邊緣。
-  - 工具列下方採平面標籤列與 1px 細框、6px 圓角的圖片區；外側左右與底部留白 12px、頂部 8px。標籤捲動沿用 Qt 原生箭頭，兩個按鈕各寬 28px，避免通用按鈕內距擠壓箭頭。
+  - 工具列下方採平面標籤列與 1px 細框、6px 圓角的圖片區；外側左右與底部留白 12px、頂部 8px。`EditorTabBar` 透過獨立的 `QProxyStyle` 將 Qt 捲動按鈕分置左右兩端，保留原生捲動與可見區域計算。兩個按鈕各寬 28px，與右側清單按鈕共用 1px 細線條箭頭繪製，顏色依 palette 及停用狀態切換。
+  - 標籤列明確使用 `ElideNone`，避免 macOS 先縮短文字而不顯示捲動箭頭。右側標籤清單以 tab bar 的自然寬度判斷是否溢出，不依賴受布局壓縮的 tabRect；視窗縮放後延至子元件布局完成再更新。
   - 「關於 FShot」共用版本、GPL 與專案資訊交談窗。Windows 在原生系統功能表加入自訂指令，重複顯示只更新項目並以 Qt timer 開啟交談窗；macOS 使用無父物件的原生 `QMenuBar` 與 `QAction.AboutRole`，由 Cocoa 合併到 FShot 應用程式選單，供編輯器隱藏時使用。兩者皆隨介面語言更新。
   - 彈性空白將快捷鍵設定、配色與語言群組推至右側，群組前保留分隔線；功能表略過空白 widget。淺深色分隔線皆為 1px 寬，上下 margin 為 8px、左右為 2px。
   - 一般工具按鈕的圖示畫布四邊至按鈕外緣各為 7px，包含 6px padding 與 1px 邊框；20px 寬的端點下拉按鈕使用獨立水平內距。
@@ -173,7 +174,7 @@
 
 - `tests/test_document.py`: tab title、dirty/save 狀態、文件 reindex。
 - `tests/test_icons.py`: 工作列與系統匣圖示在原生槽位尺寸中的不透明圖案占比，以及工具圖示的視覺置中。
-- `tests/test_main_window.py`: 工具列按鈕尺寸、圖片捲軸排除 Canvas padding 的幾何與補白元件。
+- `tests/test_main_window.py`: 工具列按鈕尺寸、標籤溢出箭頭的位置與捲動邊界、清單選頁、視窗縮放及圖片捲軸排除 Canvas padding 的幾何與補白元件。
 - `tests/test_version.py`: 執行時版本與已安裝套件 metadata 保持一致。
 - `tests/test_updates.py`: 自動檢查間隔、略過版本、背景執行與錯誤回報。
 - 以 `uv run pytest -q` 與 `uv run python -m compileall src tests` 執行跨平台檢查。
