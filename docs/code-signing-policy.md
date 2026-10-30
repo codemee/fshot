@@ -2,9 +2,9 @@
 
 ## Status / 目前狀態
 
-As of 2026-10-30, FShot has not applied for a SignPath Foundation subscription. Existing releases are unsigned. This policy describes the intended process for future signed Windows releases; it does not claim that any current download is signed.
+FShot has submitted an application for a SignPath Foundation subscription and is awaiting review. Existing releases are unsigned. This policy describes the intended process for future signed Windows releases; it does not claim that any current download is signed.
 
-截至 2026-10-30，FShot 尚未申請 SignPath Foundation 方案。現有版本未簽章。本政策說明未來 Windows 版本的簽章流程，並不表示目前下載檔已有簽章。
+FShot 已送出 SignPath Foundation 方案申請，正等待審查。現有版本未簽章。本政策說明未來 Windows 版本的簽章流程，並不表示目前下載檔已有簽章。
 
 ## Signed artifacts / 簽章範圍
 
@@ -16,11 +16,11 @@ Free code signing provided by [SignPath.io](https://signpath.io/), certificate b
 
 ## Team and release control / 團隊與發佈控管
 
-- Committer and reviewer: [codemee](https://github.com/codemee). Contributions from others are reviewed before merging.
-- Signing approver: [codemee](https://github.com/codemee). Each release signing request requires manual approval.
+- Committer and reviewer: [codemee](https://github.com/codemee) (Shin-wei Hwang). Contributions from others are reviewed before merging.
+- Signing approver: [codemee](https://github.com/codemee) (Shin-wei Hwang). Each release signing request requires manual approval.
 - The Windows executable is built from this [public repository](https://github.com/codemee/fshot) by GitHub-hosted Actions. Only the signed output will be attached to a signed release after signature verification.
 
-提交者與審查者為 [codemee](https://github.com/codemee)；其他人的貢獻須經審查才能合併。簽章核准者為 codemee，每次發行均須人工核准。Windows exe 由 GitHub 託管的 Actions runner 從公開原始碼建置；實施簽章後，通過驗證的已簽檔案才會附加至對應 Release。
+提交者與審查者為 [codemee](https://github.com/codemee)（Shin-wei Hwang）；其他人的貢獻須經審查才能合併。簽章核准者同為 codemee（Shin-wei Hwang），每次發行均須人工核准。Windows exe 由 GitHub 託管的 Actions runner 從公開原始碼建置；實施簽章後，通過驗證的已簽檔案才會附加至對應 Release。
 
 ## Privacy and network access / 隱私與網路連線
 
