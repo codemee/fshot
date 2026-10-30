@@ -21,7 +21,7 @@ RED = QColor("#e03131")
 # Bounds of the artwork's geometry on its drawing grid, excluding empty canvas.
 _TOOL_BOUNDS = {
     "screen_mode": (5, 5, 22, 21),
-    "pen": (6, 7, 19, 19),
+    "pen": (6, 6, 20, 20),
     "line": (7, 8, 18, 16),
     "arrow": (7, 8, 17, 17),
     "rectangle": (7, 8, 18, 16),
@@ -186,19 +186,18 @@ def _draw_tool_icon(
         painter.drawLine(16, 21, 16, 26)
         painter.drawLine(10, 26, 22, 26)
     elif name == "pen":
-        # The pencil artwork extends farther toward the lower-left than the
-        # other toolbar glyphs, so align its visual center with its peers.
-        painter.save()
-        painter.translate(0, -4)
-        painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawPolygon(QPolygon([QPoint(8, 24), QPoint(12, 28), QPoint(25, 15), QPoint(21, 11)]))
-        painter.drawLine(19, 13, 23, 17)
-        painter.drawLine(17, 15, 21, 19)
-        painter.drawPolygon(QPolygon([QPoint(8, 24), QPoint(12, 28), QPoint(6, 30)]))
-        painter.drawLine(10, 25, 18, 17)
-        painter.drawEllipse(12, 23, 2, 2)
-        painter.restore()
+        # A single outline, with only the end cap and pencil-tip seams.
+        path = QPainterPath(QPointF(6, 26))
+        path.lineTo(8, 19)
+        path.lineTo(20, 7)
+        path.quadTo(21, 6, 22, 7)
+        path.lineTo(25, 10)
+        path.quadTo(26, 11, 25, 12)
+        path.lineTo(13, 24)
+        path.closeSubpath()
+        painter.drawPath(path)
+        painter.drawLine(18, 9, 23, 14)
+        painter.drawLine(8, 19, 13, 24)
     elif name == "line":
         start = QPoint(7, 24)
         end = QPoint(25, 8)
@@ -233,10 +232,10 @@ def _draw_tool_icon(
                 ]
             )
         )
-        for y, length in ((10, 3), (14, 4), (18, 3)):
-            painter.drawLine(6, y, 6 + length, y)
-        for x, length in ((16, 3), (20, 4), (24, 3)):
-            painter.drawLine(x, 26, x, 26 - length)
+        for y in (10, 14, 18):
+            painter.drawLine(6, y, 9, y)
+        for x in (16, 20, 24):
+            painter.drawLine(x, 26, x, 23)
     elif name == "text":
         painter.drawLine(8, 8, 24, 8)
         painter.drawLine(16, 8, 16, 25)
