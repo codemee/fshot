@@ -4,6 +4,8 @@
 
 The Windows build is a portable single EXE. This personal-project build has no Authenticode publisher signature, so Windows may report an unknown publisher or show a Microsoft Defender SmartScreen warning.
 
+Code signing policy: [signing scope, team roles, and privacy](code-signing-policy.md).
+
 ## Download and verify
 
 1. Download `FShot-<version>-windows-x64.exe` only from [FShot GitHub Releases](https://github.com/codemee/fshot/releases).

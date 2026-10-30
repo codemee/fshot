@@ -4,6 +4,8 @@
 
 FShot 的 Windows 應用程式是一個不需安裝的單一 EXE。這是個人專案版本，沒有 Authenticode 發行者簽章，因此 Windows 可能顯示「未知的發行者」或 Microsoft Defender SmartScreen 警告。
 
+Code signing policy（程式碼簽章政策）：[簽章範圍、負責人與隱私說明](code-signing-policy.md)。
+
 ## 下載與驗證
 
 1. 只從 [FShot GitHub Releases](https://github.com/codemee/fshot/releases) 下載 `FShot-<版本>-windows-x64.exe`。

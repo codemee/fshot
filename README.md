@@ -156,4 +156,6 @@ macOS 的關閉與數字選頁使用 <kbd>⌘</kbd> 組合鍵，上一頁／下�
 
 FShot 採用 **GNU General Public License 第三版或更新版本（GPL-3.0-or-later）**。完整條款請參閱 [LICENSE](LICENSE)。第三方元件維持各自的授權。
 
+Code signing policy（程式碼簽章政策）：[簽章範圍、負責人與隱私說明](docs/code-signing-policy.md)。目前發佈的 Windows exe 尚未簽章。
+
 可從「關於 FShot」查看版本與授權資訊：Windows 位於標題列圖示的系統功能表，macOS 位於選單列的「FShot → 關於 FShot」。

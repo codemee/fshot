@@ -129,4 +129,6 @@ For contributions, see the [Development Guide](docs/development.en.md), includin
 
 FShot is licensed under the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**. See [LICENSE](LICENSE) for the full terms. Third-party components retain their respective licenses.
 
+Code signing policy: [signing scope, team roles, and privacy](docs/code-signing-policy.md). Current Windows releases are unsigned.
+
 View version and license information in About FShot: open the title-bar icon's system menu on Windows, or choose FShot → About FShot in the macOS menu bar.
