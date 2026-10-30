@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import math
-
 from PySide6.QtCore import QLineF, QPoint, QPointF, QRect, QRectF, Qt
-from PySide6.QtGui import QColor, QFontInfo, QFontMetrics, QIcon, QImage, QPainter, QPainterPath, QPen, QPolygon, QPolygonF, QPixmap
+from PySide6.QtGui import QColor, QFontInfo, QFontMetrics, QIcon, QImage, QPainter, QPainterPath, QPen, QPolygonF, QPixmap
 
 from fshot.theme import DARK_COLORS
 
 INK = QColor("#202124")
 DARK_INK = QColor(DARK_COLORS["text"])
 CAMERA_INK = QColor("#5c6269")
-# Icons use a 32 px drawing grid; 1.6 becomes a 1 px stroke at toolbar size.
-TOOL_STROKE_WIDTH = 1.6
+# Toolbar artwork is designed on a 24 px grid and rasterized once at 48 px.
+TOOL_DESIGN_SIZE = 24
+TOOL_RASTER_SIZE = 48
+TOOL_STROKE_WIDTH = 1.0
 # Most artwork fits 16 px inside the 20 px icon canvas. Dense glyphs use 20 px.
 _COMPLEX_TOOL_ICONS = {"keyboard", "save_as"}
 BLUE = QColor("#1971c2")
@@ -20,50 +20,50 @@ RED = QColor("#e03131")
 
 # Bounds of the artwork's geometry on its drawing grid, excluding empty canvas.
 _TOOL_BOUNDS = {
-    "screen_mode": (5, 5, 22, 21),
-    "pen": (6, 6, 20, 20),
-    "line": (7, 8, 18, 16),
-    "arrow": (7, 8, 17, 17),
-    "rectangle": (7, 8, 18, 16),
-    "measure": (6, 5, 21, 21),
-    "text": (8, 8, 16, 17),
-    "mosaic": (7, 8, 19, 19),
-    "style": (7, 11, 20, 16),
-    "undo": (6, 8, 20, 17),
-    "rotate_clockwise": (4, 5, 25, 25),
-    "flip_horizontal": (5, 5, 22, 22),
-    "flip_vertical": (5, 5, 22, 22),
-    "resize_down": (5, 5, 22, 22),
-    "copy": (7, 7, 17, 20),
-    "save": (7, 6, 18, 20),
-    "save_as": (6, 5, 18, 22),
-    "zoom_in": (8, 8, 18, 18),
-    "zoom_out": (8, 8, 18, 18),
-    "zoom_fit": (5, 5, 22, 22),
-    "cursor": (9, 6, 14, 21),
-    "delay": (8, 5, 16, 19),
-    "keyboard": (4, 8, 24, 17),
-    "theme": (5, 5, 22, 22),
-    "language": (5, 5, 22, 22),
+    "screen_mode": (3.75, 3.75, 16.5, 15.75),
+    "pen": (4.5, 4.5, 15, 15),
+    "line": (5.25, 6, 13.5, 12),
+    "arrow": (5.25, 6, 12.75, 12.75),
+    "rectangle": (5.25, 6, 13.5, 12),
+    "measure": (4.5, 3.75, 15.75, 15.75),
+    "text": (6, 6, 12, 12.75),
+    "mosaic": (5.25, 6, 14.25, 14.25),
+    "style": (5.25, 8.25, 15, 12),
+    "undo": (4.5, 6, 15, 12.75),
+    "rotate_clockwise": (3, 3.75, 18.75, 18.75),
+    "flip_horizontal": (3.75, 3.75, 16.5, 16.5),
+    "flip_vertical": (3.75, 3.75, 16.5, 16.5),
+    "resize_down": (3.75, 3.75, 16.5, 16.5),
+    "copy": (5.25, 5.25, 12.75, 15),
+    "save": (5.25, 4.5, 13.5, 15),
+    "save_as": (4.5, 3.75, 13.5, 16.5),
+    "zoom_in": (6, 6, 13.5, 13.5),
+    "zoom_out": (6, 6, 13.5, 13.5),
+    "zoom_fit": (3.75, 3.75, 16.5, 16.5),
+    "cursor": (6.75, 4.5, 10.5, 15.75),
+    "delay": (6, 3.75, 12, 14.25),
+    "keyboard": (3, 6, 18, 12.75),
+    "theme": (3.75, 3.75, 16.5, 16.5),
+    "language": (3.75, 3.75, 16.5, 16.5),
 }
 
 
 def _tool_bounds(name, checked, badge, line_start, line_end) -> QRectF:
-    bounds = QRectF(*_TOOL_BOUNDS.get(name, (0, 0, 32, 32)))
+    bounds = QRectF(*_TOOL_BOUNDS.get(name, (0, 0, 24, 24)))
     if name == "line":
         if line_start == "circle":
-            bounds = bounds.united(QRectF(4, 21, 6, 6))
+            bounds = bounds.united(QRectF(3, 15.75, 4.5, 4.5))
         if line_end == "circle":
-            bounds = bounds.united(QRectF(22, 5, 6, 6))
+            bounds = bounds.united(QRectF(16.5, 3.75, 4.5, 4.5))
     elif name == "cursor" and checked:
-        bounds = bounds.united(QRectF(20, 19, 10, 10))
+        bounds = bounds.united(QRectF(15, 14.25, 7.5, 7.5))
     elif name == "delay":
         if badge == "off":
-            bounds = bounds.united(QRectF(21, 22, 7, 7))
+            bounds = bounds.united(QRectF(15.75, 16.5, 5.25, 5.25))
         elif badge:
-            bounds = bounds.united(QRectF(19, 19, 12, 12))
+            bounds = bounds.united(QRectF(14.25, 14.25, 9, 9))
     elif name == "theme" and badge == "dark":
-        bounds = QRectF(6, 5, 21, 22)
+        bounds = QRectF(4.5, 3.75, 15.75, 16.5)
     return bounds
 
 
@@ -131,31 +131,25 @@ def tool_icon(
     line_start: str = "none",
     line_end: str = "none",
 ) -> QIcon:
-    icon = QIcon()
-    # Render native pixels for Windows fractional scaling and Retina displays.
-    # Keep a separate 32 px representation for documentation and larger views.
-    for size, dpr in ((20, 1), (25, 1.25), (30, 1.5), (32, 1),
-                      (35, 1.75), (40, 2), (50, 2.5), (60, 3)):
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.GlobalColor.transparent)
-        painter = _ToolbarPainter(pixmap, size / 32,
-                                  _tool_bounds(name, checked, badge, line_start, line_end),
-                                  artwork_size=round(size * (1 if name in _COMPLEX_TOOL_ICONS else 0.8)),
-                                  reserve_stroke=name != "mosaic")
-        try:
-            _draw_tool_icon(painter, name, color, width, checked, badge, dark, line_start, line_end)
-        finally:
-            painter.end()
-        pixmap.setDevicePixelRatio(dpr)
-        icon.addPixmap(pixmap)
-        # Qt chooses the On representation for checked actions, including
-        # programmatic tool changes, without rebuilding every toolbar icon.
-        active_pixmap = pixmap.copy()
-        active_painter = QPainter(active_pixmap)
-        active_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
-        active_painter.fillRect(active_pixmap.rect(), QColor(DARK_COLORS["accent"]) if dark else BLUE)
-        active_painter.end()
-        icon.addPixmap(active_pixmap, QIcon.Mode.Normal, QIcon.State.On)
+    # Supply only the 48 px raster; QIcon scales it to the toolbar's 20 px slot.
+    pixmap = QPixmap(TOOL_RASTER_SIZE, TOOL_RASTER_SIZE)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = _ToolbarPainter(
+        pixmap, _tool_bounds(name, checked, badge, line_start, line_end),
+        artwork_size=48 if name in _COMPLEX_TOOL_ICONS else 38,
+        reserve_stroke=name != "mosaic",
+    )
+    try:
+        _draw_tool_icon(painter, name, color, width, checked, badge, dark, line_start, line_end)
+    finally:
+        painter.end()
+    icon = QIcon(pixmap)
+    active_pixmap = pixmap.copy()
+    active_painter = QPainter(active_pixmap)
+    active_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+    active_painter.fillRect(active_pixmap.rect(), QColor(DARK_COLORS["accent"]) if dark else BLUE)
+    active_painter.end()
+    icon.addPixmap(active_pixmap, QIcon.Mode.Normal, QIcon.State.On)
     return icon
 
 
@@ -172,7 +166,7 @@ def _draw_tool_icon(
 ) -> None:
     base_ink = DARK_INK if dark else INK
     ink = color or base_ink
-    icon_width = TOOL_STROKE_WIDTH if name != "style" else max(1.3, min(5.0, width * 0.45))
+    icon_width = TOOL_STROKE_WIDTH if name != "style" else max(0.9750000000000001, min(3.75, width * 0.3375))
     pen = QPen(ink, icon_width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
     painter.setPen(pen)
     painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -182,34 +176,34 @@ def _draw_tool_icon(
             pen.setStyle(Qt.PenStyle.DashLine)
             pen.setDashPattern([2, 2])
             painter.setPen(pen)
-        painter.drawRoundedRect(QRect(5, 5, 22, 16), 2, 2)
-        painter.drawLine(16, 21, 16, 26)
-        painter.drawLine(10, 26, 22, 26)
+        painter.drawRoundedRect(QRectF(3.75, 3.75, 16.5, 12), 1.5, 1.5)
+        painter.drawLine(12, 15.75, 12, 19.5)
+        painter.drawLine(7.5, 19.5, 16.5, 19.5)
     elif name == "pen":
         # A single outline, with only the end cap and pencil-tip seams.
-        path = QPainterPath(QPointF(6, 26))
-        path.lineTo(8, 19)
-        path.lineTo(20, 7)
-        path.quadTo(21, 6, 22, 7)
-        path.lineTo(25, 10)
-        path.quadTo(26, 11, 25, 12)
-        path.lineTo(13, 24)
+        path = QPainterPath(QPointF(4.5, 19.5))
+        path.lineTo(6, 14.25)
+        path.lineTo(15, 5.25)
+        path.quadTo(15.75, 4.5, 16.5, 5.25)
+        path.lineTo(18.75, 7.5)
+        path.quadTo(19.5, 8.25, 18.75, 9)
+        path.lineTo(9.75, 18)
         path.closeSubpath()
         painter.drawPath(path)
-        painter.drawLine(18, 9, 23, 14)
-        painter.drawLine(8, 19, 13, 24)
+        painter.drawLine(13.5, 6.75, 17.25, 10.5)
+        painter.drawLine(6, 14.25, 9.75, 18)
     elif name == "line":
-        start = QPoint(7, 24)
-        end = QPoint(25, 8)
+        start = QPointF(5.25, 18)
+        end = QPointF(18.75, 6)
         painter.drawLine(start, end)
-        _draw_line_end_icon(painter, start, ((9, 17), (15, 23)), line_start, ink)
-        _draw_line_end_icon(painter, end, ((23, 15), (17, 9)), line_end, ink)
+        _draw_line_end_icon(painter, start, ((6.75, 12.75), (11.25, 17.25)), line_start, ink, circle_radius=2.25)
+        _draw_line_end_icon(painter, end, ((17.25, 11.25), (12.75, 6.75)), line_end, ink, circle_radius=2.25)
     elif name == "arrow":
-        painter.drawLine(24, 8, 7, 25)
-        painter.drawLine(7, 25, 9, 17)
-        painter.drawLine(7, 25, 15, 23)
+        painter.drawLine(18, 6, 5.25, 18.75)
+        painter.drawLine(5.25, 18.75, 6.75, 12.75)
+        painter.drawLine(5.25, 18.75, 11.25, 17.25)
     elif name == "rectangle":
-        painter.drawRoundedRect(7, 8, 18, 16, 2, 2)
+        painter.drawRoundedRect(5.25, 6, 13.5, 12, 1.5, 1.5)
     elif name == "measure":
         painter.setPen(
             QPen(
@@ -221,43 +215,43 @@ def _draw_tool_icon(
             )
         )
         painter.drawPolygon(
-            QPolygon(
+            QPolygonF(
                 [
-                    QPoint(6, 5),
-                    QPoint(12, 5),
-                    QPoint(12, 20),
-                    QPoint(27, 20),
-                    QPoint(27, 26),
-                    QPoint(6, 26),
+                    QPointF(4.5, 3.75),
+                    QPointF(9, 3.75),
+                    QPointF(9, 15),
+                    QPointF(20.25, 15),
+                    QPointF(20.25, 19.5),
+                    QPointF(4.5, 19.5),
                 ]
             )
         )
-        for y in (10, 14, 18):
-            painter.drawLine(6, y, 9, y)
-        for x in (16, 20, 24):
-            painter.drawLine(x, 26, x, 23)
+        for y in (7.5, 10.5, 13.5):
+            painter.drawLine(4.5, y, 6.75, y)
+        for x in (12, 15, 18):
+            painter.drawLine(x, 19.5, x, 17.25)
     elif name == "text":
-        painter.drawLine(8, 8, 24, 8)
-        painter.drawLine(16, 8, 16, 25)
+        painter.drawLine(6, 6, 18, 6)
+        painter.drawLine(12, 6, 12, 18.75)
     elif name == "mosaic":
-        painter.setPen(QPen(base_ink, 0.9))
-        for y in (8, 15, 22):
-            for x in (7, 14, 21):
-                painter.fillRect(x, y, 5, 5, QColor("#9aa0a6") if dark and (x + y) % 2 else QColor("#495057") if (x + y) % 2 else QColor("#adb5bd"))
+        painter.setPen(QPen(base_ink, 0.675))
+        for row, y in enumerate((6, 11.25, 16.5)):
+            for column, x in enumerate((5.25, 10.5, 15.75)):
+                painter.fillRect(x, y, 3.75, 3.75, QColor("#9aa0a6") if dark and (row + column) % 2 else QColor("#495057") if (row + column) % 2 else QColor("#adb5bd"))
     elif name == "style":
-        painter.drawLine(7, 23, 25, 11)
+        painter.drawLine(5.25, 17.25, 18.75, 8.25)
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(ink)
-        painter.drawEllipse(20, 20, 7, 7)
+        painter.drawEllipse(15, 15, 5.25, 5.25)
     elif name == "undo":
         painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-        path = QPainterPath(QPoint(12, 12))
-        path.cubicTo(17, 8, 25, 10, 26, 17)
-        path.cubicTo(27, 24, 18, 28, 11, 23)
+        path = QPainterPath(QPointF(9, 9))
+        path.cubicTo(12.75, 6, 18.75, 7.5, 19.5, 12.75)
+        path.cubicTo(20.25, 18, 13.5, 21, 8.25, 17.25)
         painter.drawPath(path)
-        painter.drawLine(12, 12, 6, 12)
-        painter.drawLine(6, 12, 10, 8)
-        painter.drawLine(6, 12, 10, 16)
+        painter.drawLine(9, 9, 4.5, 9)
+        painter.drawLine(4.5, 9, 7.5, 6)
+        painter.drawLine(4.5, 9, 7.5, 12)
     elif name == "rotate_clockwise":
         painter.setPen(
             QPen(
@@ -270,25 +264,25 @@ def _draw_tool_icon(
         )
         # Put the clockwise arrow at the upper-left and show the picture
         # itself falling toward the right.
-        arrow = QPainterPath(QPoint(4, 15))
-        arrow.cubicTo(5, 8, 10, 6, 18, 8)
+        arrow = QPainterPath(QPointF(3, 11.25))
+        arrow.cubicTo(3.75, 6, 7.5, 4.5, 13.5, 6)
         painter.drawPath(arrow)
-        painter.drawLine(18, 8, 14, 5)
-        painter.drawLine(18, 8, 14, 11)
+        painter.drawLine(13.5, 6, 10.5, 3.75)
+        painter.drawLine(13.5, 6, 10.5, 8.25)
 
         painter.save()
-        painter.translate(18, 20)
+        painter.translate(13.5, 15)
         painter.rotate(18)
-        painter.drawRoundedRect(-8, -7, 16, 14, 1.5, 1.5)
-        painter.drawEllipse(-5, -4, 2, 2)
+        painter.drawRoundedRect(-6, -5.25, 12, 10.5, 1.125, 1.125)
+        painter.drawEllipse(-3.75, -3, 1.5, 1.5)
         painter.drawPolyline(
-            QPolygon(
+            QPolygonF(
                 [
-                    QPoint(-6, 5),
-                    QPoint(-2, 1),
-                    QPoint(1, 4),
-                    QPoint(4, 1),
-                    QPoint(6, 5),
+                    QPointF(-4.5, 3.75),
+                    QPointF(-1.5, 0.75),
+                    QPointF(0.75, 3),
+                    QPointF(3, 0.75),
+                    QPointF(4.5, 3.75),
                 ]
             )
         )
@@ -303,8 +297,8 @@ def _draw_tool_icon(
                 Qt.PenJoinStyle.RoundJoin,
             )
         )
-        painter.drawPolygon(QPolygon([QPoint(5, 26), QPoint(13, 26), QPoint(13, 6)]))
-        painter.drawPolygon(QPolygon([QPoint(27, 26), QPoint(19, 26), QPoint(19, 6)]))
+        painter.drawPolygon(QPolygonF([QPointF(3.75, 19.5), QPointF(9, 19.5), QPointF(9, 4.5)]))
+        painter.drawPolygon(QPolygonF([QPointF(20.25, 19.5), QPointF(15, 19.5), QPointF(15, 4.5)]))
         painter.draw_mirror_axis(vertical=True)
     elif name == "flip_vertical":
         painter.setPen(
@@ -316,12 +310,12 @@ def _draw_tool_icon(
                 Qt.PenJoinStyle.RoundJoin,
             )
         )
-        painter.drawPolygon(QPolygon([QPoint(6, 13), QPoint(26, 13), QPoint(6, 5)]))
-        painter.drawPolygon(QPolygon([QPoint(6, 19), QPoint(26, 19), QPoint(6, 27)]))
+        painter.drawPolygon(QPolygonF([QPointF(4.5, 9), QPointF(19.5, 9), QPointF(4.5, 3.75)]))
+        painter.drawPolygon(QPolygonF([QPointF(4.5, 15), QPointF(19.5, 15), QPointF(4.5, 20.25)]))
         painter.draw_mirror_axis(vertical=False)
     elif name == "resize_down":
-        painter.setPen(QPen(base_ink, 1.25, Qt.PenStyle.DashLine))
-        painter.drawRect(5, 5, 22, 22)
+        painter.setPen(QPen(base_ink, 0.9375, Qt.PenStyle.DashLine))
+        painter.drawRect(3.75, 3.75, 16.5, 16.5)
         painter.setPen(
             QPen(
                 base_ink,
@@ -331,86 +325,86 @@ def _draw_tool_icon(
                 Qt.PenJoinStyle.RoundJoin,
             )
         )
-        painter.drawLine(25, 25, 15, 15)
-        painter.drawLine(15, 15, 16, 21)
-        painter.drawLine(15, 15, 21, 16)
+        painter.drawLine(18.75, 18.75, 11.25, 11.25)
+        painter.drawLine(11.25, 11.25, 12, 15.75)
+        painter.drawLine(11.25, 11.25, 15.75, 12)
     elif name == "copy":
-        painter.drawRoundedRect(11, 7, 13, 16, 2, 2)
-        painter.drawRoundedRect(7, 11, 13, 16, 2, 2)
+        painter.drawRoundedRect(8.25, 5.25, 9.75, 12, 1.5, 1.5)
+        painter.drawRoundedRect(5.25, 8.25, 9.75, 12, 1.5, 1.5)
     elif name == "save":
         painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-        painter.drawRoundedRect(7, 6, 18, 20, 2, 2)
-        painter.drawLine(10, 6, 22, 6)
-        painter.drawLine(22, 6, 25, 9)
-        painter.drawRect(11, 8, 10, 6)
-        painter.drawLine(19, 9, 19, 13)
-        painter.drawRoundedRect(11, 18, 10, 6, 1, 1)
-        painter.drawLine(13, 21, 19, 21)
+        painter.drawRoundedRect(5.25, 4.5, 13.5, 15, 1.5, 1.5)
+        painter.drawLine(7.5, 4.5, 16.5, 4.5)
+        painter.drawLine(16.5, 4.5, 18.75, 6.75)
+        painter.drawRect(8.25, 6, 7.5, 4.5)
+        painter.drawLine(14.25, 6.75, 14.25, 9.75)
+        painter.drawRoundedRect(8.25, 13.5, 7.5, 4.5, 0.75, 0.75)
+        painter.drawLine(9.75, 15.75, 14.25, 15.75)
     elif name == "save_as":
         painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawRoundedRect(9, 5, 15, 17, 2, 2)
-        painter.drawLine(12, 5, 21, 5)
-        painter.drawLine(21, 5, 24, 8)
-        painter.drawRect(13, 7, 7, 4)
-        painter.drawRoundedRect(13, 16, 7, 4, 1, 1)
+        painter.drawRoundedRect(6.75, 3.75, 11.25, 12.75, 1.5, 1.5)
+        painter.drawLine(9, 3.75, 15.75, 3.75)
+        painter.drawLine(15.75, 3.75, 18, 6)
+        painter.drawRect(9.75, 5.25, 5.25, 3)
+        painter.drawRoundedRect(9.75, 12, 5.25, 3, 0.75, 0.75)
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QColor(DARK_COLORS["panel"]) if dark else QColor("#ffffff"))
-        painter.drawRoundedRect(5, 9, 17, 19, 3, 3)
+        painter.drawRoundedRect(3.75, 6.75, 12.75, 14.25, 2.25, 2.25)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-        painter.drawRoundedRect(6, 10, 15, 17, 2, 2)
-        painter.drawLine(9, 10, 18, 10)
-        painter.drawLine(18, 10, 21, 13)
-        painter.drawRect(10, 12, 7, 4)
-        painter.drawRoundedRect(10, 21, 7, 4, 1, 1)
+        painter.drawRoundedRect(4.5, 7.5, 11.25, 12.75, 1.5, 1.5)
+        painter.drawLine(6.75, 7.5, 13.5, 7.5)
+        painter.drawLine(13.5, 7.5, 15.75, 9.75)
+        painter.drawRect(7.5, 9, 5.25, 3)
+        painter.drawRoundedRect(7.5, 15.75, 5.25, 3, 0.75, 0.75)
     elif name == "zoom_in":
         _draw_magnifier(painter)
-        painter.drawLine(15, 11, 15, 19)
-        painter.drawLine(11, 15, 19, 15)
+        painter.drawLine(11.25, 8.25, 11.25, 14.25)
+        painter.drawLine(8.25, 11.25, 14.25, 11.25)
     elif name == "zoom_out":
         _draw_magnifier(painter)
-        painter.drawLine(11, 15, 19, 15)
+        painter.drawLine(8.25, 11.25, 14.25, 11.25)
     elif name == "zoom_fit":
-        for x, y, dx, dy in ((5, 5, 1, 1), (27, 5, -1, 1), (5, 27, 1, -1), (27, 27, -1, -1)):
-            painter.drawLine(x, y, x + dx * 6, y)
-            painter.drawLine(x, y, x, y + dy * 6)
-        painter.drawRect(11, 11, 10, 10)
+        for x, y, dx, dy in ((3.75, 3.75, 1, 1), (20.25, 3.75, -1, 1), (3.75, 20.25, 1, -1), (20.25, 20.25, -1, -1)):
+            painter.drawLine(x, y, x + dx * 4.5, y)
+            painter.drawLine(x, y, x, y + dy * 4.5)
+        painter.drawRect(8.25, 8.25, 7.5, 7.5)
     elif name == "cursor":
-        path = QPainterPath(QPoint(9, 6))
-        path.lineTo(23, 19)
-        path.lineTo(16, 20)
-        path.lineTo(13, 27)
-        path.lineTo(9, 6)
+        path = QPainterPath(QPointF(6.75, 4.5))
+        path.lineTo(17.25, 14.25)
+        path.lineTo(12, 15)
+        path.lineTo(9.75, 20.25)
+        path.lineTo(6.75, 4.5)
         painter.setBrush(QColor(DARK_COLORS["raised"]) if dark and checked else BLUE if checked
                          else QColor(DARK_COLORS["panel"]) if dark else QColor("#ffffff"))
         painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH))
         painter.drawPath(path)
         if checked:
-            check_pen = QPen(QColor(DARK_COLORS["accent"]) if dark else GREEN, 1.8)
+            check_pen = QPen(QColor(DARK_COLORS["accent"]) if dark else GREEN, 1.35)
             check_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(check_pen)
-            painter.drawLine(20, 25, 24, 29)
-            painter.drawLine(24, 29, 30, 19)
+            painter.drawLine(15, 18.75, 18, 21.75)
+            painter.drawLine(18, 21.75, 22.5, 14.25)
     elif name == "delay":
-        painter.drawEllipse(8, 8, 16, 16)
-        painter.drawLine(16, 16, 16, 10)
-        painter.drawLine(16, 16, 21, 18)
-        painter.drawLine(13, 5, 19, 5)
+        painter.drawEllipse(6, 6, 12, 12)
+        painter.drawLine(12, 12, 12, 7.5)
+        painter.drawLine(12, 12, 15.75, 13.5)
+        painter.drawLine(9.75, 3.75, 14.25, 3.75)
         if badge == "off":
-            painter.setPen(QPen(RED, 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-            painter.drawLine(21, 22, 28, 29)
-            painter.drawLine(28, 22, 21, 29)
+            painter.setPen(QPen(RED, 1.35, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+            painter.drawLine(15.75, 16.5, 21, 21.75)
+            painter.drawLine(21, 16.5, 15.75, 21.75)
         elif badge:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(DARK_COLORS["warning"]) if dark else BLUE)
-            painter.drawEllipse(19, 19, 12, 12)
+            painter.drawEllipse(14.25, 14.25, 9, 9)
             painter.setPen(QColor(DARK_COLORS["on_accent"] if dark else "#ffffff"))
             font = painter.font()
-            font.setPointSize(7 if len(badge) <= 1 else 6)
+            font.setPointSizeF(5.25 if len(badge) <= 1 else 4.5)
             font.setBold(True)
             painter.setFont(font)
-            painter.drawText(QRect(19, 19, 12, 12), Qt.AlignmentFlag.AlignCenter, badge)
+            painter.drawText(QRectF(14.25, 14.25, 9, 9), Qt.AlignmentFlag.AlignCenter, badge)
     elif name == "keyboard":
         painter.setPen(
             QPen(
@@ -421,49 +415,49 @@ def _draw_tool_icon(
                 Qt.PenJoinStyle.RoundJoin,
             )
         )
-        painter.drawRoundedRect(4, 8, 24, 17, 3, 3)
+        painter.drawRoundedRect(3, 6, 18, 12.75, 2.25, 2.25)
         painter.setBrush(base_ink)
         painter.setPen(Qt.PenStyle.NoPen)
-        for y in (12, 17):
-            for x in (8, 13, 18, 23):
-                painter.drawRoundedRect(x, y, 2.5, 2.5, 0.5, 0.5)
-        painter.drawRoundedRect(10, 21, 12, 2, 0.6, 0.6)
+        for y in (9, 12.75):
+            for x in (6, 9.75, 13.5, 17.25):
+                painter.drawRoundedRect(x, y, 1.875, 1.875, 0.375, 0.375)
+        painter.drawRoundedRect(7.5, 15.75, 9, 1.5, 0.45, 0.45)
     elif name == "theme":
         if badge == "system":
-            painter.drawEllipse(5, 5, 22, 22)
+            painter.drawEllipse(3.75, 3.75, 16.5, 16.5)
             half = QPainterPath()
-            half.moveTo(16, 5)
-            half.arcTo(5, 5, 22, 22, 90, 180)
+            half.moveTo(12, 3.75)
+            half.arcTo(3.75, 3.75, 16.5, 16.5, 90, 180)
             half.closeSubpath()
             painter.setBrush(base_ink)
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawPath(half)
         elif badge == "dark":
             moon = QPainterPath()
-            moon.addEllipse(6, 5, 21, 22)
+            moon.addEllipse(4.5, 3.75, 15.75, 16.5)
             cutout = QPainterPath()
-            cutout.addEllipse(12, 2, 20, 20)
+            cutout.addEllipse(9, 1.5, 15, 15)
             painter.drawPath(moon.subtracted(cutout))
         else:
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.setPen(QPen(base_ink, TOOL_STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-            painter.drawEllipse(11, 11, 10, 10)
+            painter.drawEllipse(8.25, 8.25, 7.5, 7.5)
             for start, end in (
-                ((16, 5), (16, 8)),
-                ((16, 24), (16, 27)),
-                ((5, 16), (8, 16)),
-                ((24, 16), (27, 16)),
-                ((8, 8), (10, 10)),
-                ((22, 22), (24, 24)),
-                ((24, 8), (22, 10)),
-                ((10, 22), (8, 24)),
+                ((12, 3.75), (12, 6)),
+                ((12, 18), (12, 20.25)),
+                ((3.75, 12), (6, 12)),
+                ((18, 12), (20.25, 12)),
+                ((6, 6), (7.5, 7.5)),
+                ((16.5, 16.5), (18, 18)),
+                ((18, 6), (16.5, 7.5)),
+                ((7.5, 16.5), (6, 18)),
             ):
                 painter.drawLine(*start, *end)
     elif name == "language":
         if badge == "system":
-            painter.drawEllipse(5, 5, 22, 22)
-            painter.drawEllipse(11, 5, 10, 22)
-            painter.drawLine(5, 16, 27, 16)
+            painter.drawEllipse(3.75, 3.75, 16.5, 16.5)
+            painter.drawEllipse(8.25, 3.75, 7.5, 16.5)
+            painter.drawLine(3.75, 12, 20.25, 12)
         else:
             painter.setPen(base_ink)
             label = "中" if badge == "zh_TW" else "A"
@@ -497,15 +491,15 @@ def line_end_style_icon(style: str, endpoint: str, dark: bool = False) -> QIcon:
 
 def _draw_line_end_icon(
     painter: QPainter,
-    tip: QPoint,
+    tip: QPoint | QPointF,
     arrow_points: tuple[tuple[int, int], tuple[int, int]],
     style: str,
     ink: QColor,
-    circle_radius: int = 3,
+    circle_radius: float = 3,
 ) -> None:
     if style == "arrow":
         for point in arrow_points:
-            painter.drawLine(tip, QPoint(*point))
+            painter.drawLine(tip, QPointF(*point))
     elif style == "circle":
         painter.save()
         painter.setPen(Qt.PenStyle.NoPen)
@@ -515,150 +509,71 @@ def _draw_line_end_icon(
 
 
 def _draw_magnifier(painter: QPainter) -> None:
-    painter.drawEllipse(8, 8, 14, 14)
-    painter.drawLine(20, 20, 26, 26)
+    painter.drawEllipse(6, 6, 10.5, 10.5)
+    painter.drawLine(15, 15, 19.5, 19.5)
 
 
 class _ToolbarPainter(QPainter):
-    """Hint icon geometry to physical pixels before rasterizing each size."""
+    """Rasterize 24-grid geometry at 48 px without final-size pixel snapping."""
 
-    def __init__(self, pixmap: QPixmap, scale: float, bounds: QRectF, *, artwork_size: int,
-                 reserve_stroke: bool = True) -> None:
+    def __init__(self, pixmap, bounds, *, artwork_size, reserve_stroke=True):
         super().__init__(pixmap)
-        self._stroke_scale = scale
         self._size = pixmap.width()
         self._artwork_size = artwork_size
-        margin = (self._size - self._artwork_size) // 2
-        self.setClipRect(QRect(margin, margin, self._artwork_size, self._artwork_size))
-        stroke_pixels = max(1, math.floor(TOOL_STROKE_WIDTH * scale + 0.5)) if reserve_stroke else 0
-        self._scale = (self._artwork_size - stroke_pixels) / max(bounds.width(), bounds.height())
-        self.translate(margin + self._artwork_size / 2, margin + self._artwork_size / 2)
+        self._raster_scale = self._size / TOOL_DESIGN_SIZE
+        margin = (self._size - artwork_size) / 2
+        self.setClipRect(QRectF(margin, margin, artwork_size, artwork_size))
+        stroke = TOOL_STROKE_WIDTH * self._raster_scale if reserve_stroke else 0
+        self._scale = (artwork_size - stroke) / max(bounds.width(), bounds.height())
+        self.translate(self._size / 2, self._size / 2)
         self.scale(self._scale, self._scale)
         self.translate(-bounds.center().x(), -bounds.center().y())
         self.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        self.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
 
-    def setPen(self, pen) -> None:
+    def setPen(self, pen):
         if isinstance(pen, QPen) and pen.style() != Qt.PenStyle.NoPen:
             pen = QPen(pen)
-            pixels = max(1, math.floor(pen.widthF() * self._stroke_scale + 0.5))
-            pen.setWidthF(pixels / self._scale)
+            pen.setWidthF(pen.widthF() * self._raster_scale / self._scale)
         super().setPen(pen)
 
-    def _point(self, point: QPointF, *, stroke: bool = True) -> QPointF:
-        transform = self.worldTransform()
-        if abs(transform.m12()) > 1e-6 or abs(transform.m21()) > 1e-6:
-            return point  # Keep intentionally rotated artwork smooth.
-        offset = 0.0
-        if stroke and self.pen().style() != Qt.PenStyle.NoPen:
-            pixels = round(self.pen().widthF() * self._scale)
-            offset = 0.5 if pixels % 2 else 0.0
-        mapped = transform.map(point)
-        mapped.setX(math.floor(mapped.x() - offset + 0.5) + offset)
-        mapped.setY(math.floor(mapped.y() - offset + 0.5) + offset)
-        return mapped
+    def drawLine(self, *args):
+        line = QLineF(QPointF(args[0]), QPointF(args[1])) if len(args) == 2 else QLineF(*args)
+        super().drawLine(line)
 
-    def _draw_pixels(self, method, *args) -> None:
-        transform = self.worldTransform()
-        if abs(transform.m12()) > 1e-6 or abs(transform.m21()) > 1e-6:
-            method(*args)
-            return
-        # Paint snapped coordinates directly. Mapping them back through the
-        # source grid introduces rounding errors at fractional display scales.
-        self.save()
-        try:
-            pen = QPen(self.pen())
-            pen.setWidthF(pen.widthF() * self._scale)
-            self.resetTransform()
-            super().setPen(pen)
-            method(*args)
-        finally:
-            self.restore()
+    def drawRect(self, *args):
+        super().drawRect(QRectF(args[0]) if len(args) == 1 else QRectF(*args))
 
-    def _bounds(self, rect: QRectF, *, stroke: bool = True) -> QRectF:
-        return QRectF(self._point(rect.topLeft(), stroke=stroke),
-                      self._point(rect.bottomRight(), stroke=stroke))
-
-    def drawLine(self, *args) -> None:
-        if len(args) == 2:
-            start, end = (QPointF(point) for point in args)
+    def drawRoundedRect(self, *args):
+        if len(args) == 3:
+            super().drawRoundedRect(QRectF(args[0]), args[1], args[2])
         else:
-            start, end = QPointF(args[0], args[1]), QPointF(args[2], args[3])
-        self._draw_pixels(super().drawLine, QLineF(self._point(start), self._point(end)))
+            super().drawRoundedRect(QRectF(*args[:4]), args[4], args[5])
 
-    def draw_mirror_axis(self, *, vertical: bool) -> None:
-        # An odd-width stroke snaps half a pixel away from an even-size glyph's
-        # center. Use even-width, symmetric dashes on the physical pixel grid.
+    def drawEllipse(self, *args):
+        if len(args) == 3:
+            super().drawEllipse(QPointF(args[0]), args[1], args[2])
+        else:
+            super().drawEllipse(QRectF(*args))
+
+    def fillRect(self, x, y, width, height, color):
+        super().fillRect(QRectF(x, y, width, height), color)
+
+    def draw_mirror_axis(self, *, vertical):
         extent = self._artwork_size
-        margin = (self._size - extent) // 2
-        thickness = max(2, 2 * math.floor(TOOL_STROKE_WIDTH * self._stroke_scale / 2 + 0.5))
-        dash = max(2, 2 * round(extent / 8))
-        cross = margin + (extent - thickness) // 2
-        starts = (margin, margin + (extent - dash) // 2, margin + extent - dash)
+        margin = (self._size - extent) / 2
+        thickness = 0.6 * self._raster_scale
+        dash = extent / 3
+        cross = (self._size - thickness) / 2
+        starts = (margin, self._size - margin - dash)
         self.save()
-        try:
-            self.resetTransform()
-            for start in starts:
-                rect = QRect(cross, start, thickness, dash) if vertical else QRect(start, cross, dash, thickness)
-                super().fillRect(rect, self.pen().color())
-        finally:
-            self.restore()
+        self.resetTransform()
+        for start in starts:
+            rect = QRectF(cross, start, thickness, dash) if vertical else QRectF(start, cross, dash, thickness)
+            QPainter.fillRect(self, rect, self.pen().color())
+        self.restore()
 
-    def drawRect(self, *args) -> None:
-        rect = QRectF(args[0]) if len(args) == 1 else QRectF(*args)
-        self._draw_pixels(super().drawRect, self._bounds(rect))
-
-    def drawRoundedRect(self, *args) -> None:
-        if len(args) == 3:
-            rect, rx, ry = QRectF(args[0]), args[1], args[2]
-        else:
-            rect, rx, ry = QRectF(*args[:4]), args[4], args[5]
-        transform = self.worldTransform()
-        if abs(transform.m12()) <= 1e-6 and abs(transform.m21()) <= 1e-6:
-            rx, ry = rx * self._scale, ry * self._scale
-        self._draw_pixels(super().drawRoundedRect, self._bounds(rect), rx, ry)
-
-    def drawEllipse(self, *args) -> None:
-        if len(args) == 3:
-            center, rx, ry = args
-            rect = QRectF(center.x() - rx, center.y() - ry, rx * 2, ry * 2)
-        else:
-            rect = QRectF(*args)
-        self._draw_pixels(self._paint_ellipse, self._bounds(rect))
-
-    def _paint_ellipse(self, rect: QRectF) -> None:
-        # Filling an annulus avoids Qt's thin-pen rasterizer, which produces
-        # visibly lighter breaks where diagonal arc segments meet.
-        self.save()
-        try:
-            pen = self.pen()
-            super().setPen(Qt.PenStyle.NoPen)
-            body = QPainterPath()
-            body.addEllipse(rect)
-            super().drawPath(body)
-            if pen.style() == Qt.PenStyle.NoPen:
-                return
-            half = pen.widthF() / 2
-            ring = QPainterPath()
-            ring.setFillRule(Qt.FillRule.OddEvenFill)
-            ring.addEllipse(rect.adjusted(-half, -half, half, half))
-            if rect.width() > 2 * half and rect.height() > 2 * half:
-                ring.addEllipse(rect.adjusted(half, half, -half, -half))
-            self.setBrush(pen.brush())
-            super().drawPath(ring)
-        finally:
-            self.restore()
-
-    def drawPolygon(self, polygon) -> None:
-        self._draw_pixels(super().drawPolygon, QPolygonF([self._point(QPointF(point)) for point in polygon]))
-
-    def drawPolyline(self, polygon) -> None:
-        self._draw_pixels(super().drawPolyline, QPolygonF([self._point(QPointF(point)) for point in polygon]))
-
-    def fillRect(self, x, y, width, height, color) -> None:
-        self._draw_pixels(super().fillRect, self._bounds(QRectF(x, y, width, height), stroke=False), color)
-
-    def drawText(self, rect, flags, text) -> None:
-        # Let the font engine hint glyphs at the final pixel size, too.
+    def drawText(self, rect, flags, text):
         mapped = self.worldTransform().mapRect(QRectF(rect))
         font = self.font()
         font.setPixelSize(max(1, round(QFontInfo(font).pixelSize() * self._scale)))
@@ -669,19 +584,21 @@ class _ToolbarPainter(QPainter):
         self.restore()
 
     def draw_label(self, text: str) -> None:
+        # Letter glyphs need less visual weight than outlined pictograms.
+        target_size = round(self._artwork_size * (0.8 if text == "A" else 0.875))
         font = self.font()
         font.setBold(False)
         best_size = 1
-        for size in range(1, self._artwork_size * 3):
+        for size in range(1, target_size * 3):
             font.setPixelSize(size)
             bounds = QFontMetrics(font).tightBoundingRect(text)
-            if max(bounds.width(), bounds.height()) > self._artwork_size:
+            if max(bounds.width(), bounds.height()) > target_size:
                 break
             best_size = size
         # Fallback CJK fonts can have ink bounds smaller than their font metrics.
         # Fit the actual native glyph pixels, then remove their empty surround.
         best = None
-        for size in range(max(1, best_size - 2), best_size + self._artwork_size // 2 + 4):
+        for size in range(max(1, best_size - 2), best_size + target_size // 2 + 4):
             font.setPixelSize(size)
             glyph = QPixmap(self._size * 3, self._size * 3)
             glyph.fill(Qt.GlobalColor.transparent)
@@ -692,10 +609,10 @@ class _ToolbarPainter(QPainter):
             painter.end()
             bounds = _ink_bounds(glyph)
             extent = max(bounds.width(), bounds.height())
-            if extent > self._artwork_size:
+            if extent > target_size:
                 break
             best = glyph.copy(bounds)
-            if extent == self._artwork_size:
+            if extent == target_size:
                 break
         if best is None:
             return

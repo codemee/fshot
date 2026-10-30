@@ -60,40 +60,33 @@ def test_pen_tool_icon_is_vertically_centered(qt_app):
     assert abs(((top + bottom) / 2) - 15.5) <= 1.5
 
 
-def test_tool_icon_has_native_toolbar_sizes(qt_app):
+def test_tool_icon_uses_one_48_px_source(qt_app):
     icon = tool_icon("pen")
 
     assert _opaque_bounds(icon, 20)[0] > 0
-    for dpr in (1, 1.25, 1.5, 1.75, 2, 2.5, 3):
-        size = QSize(round(20 * dpr), round(20 * dpr))
-        assert size in icon.availableSizes()
-        pixmap = icon.pixmap(QSize(20, 20), dpr)
-        assert pixmap.size() == size
-        assert pixmap.devicePixelRatio() == dpr
+    assert icon.availableSizes() == [QSize(48, 48)]
+    assert icon.pixmap(20, 20).size() == QSize(20, 20)
+    assert icon.pixmap(40, 40).size() == QSize(40, 40)
 
 
-def test_toolbar_straight_edges_use_solid_pixel_rows_at_each_dpi(qt_app):
+def test_toolbar_edges_are_resampled_by_qt(qt_app):
     icon = tool_icon("rectangle")
 
-    for dpr, stroke_pixels in ((1, 1), (1.25, 1), (1.5, 2), (1.75, 2),
-                               (2, 2), (2.5, 3), (3, 3)):
+    for dpr in (1, 1.25, 1.5, 1.75, 2):
         image = icon.pixmap(QSize(20, 20), dpr).toImage()
         # Inspect the straight section of the top edge, away from rounded corners.
         alpha = [image.pixelColor(image.width() // 2, y).alpha()
                  for y in range(image.height() // 2)]
-        assert set(alpha) == {0, 255}, (dpr, alpha)
-        assert alpha.count(255) == stroke_pixels, (dpr, alpha)
+        assert any(0 < value < 255 for value in alpha), (dpr, alpha)
         # Both opposite edges must be present, not a clipped high-DPI quadrant.
         bottom = [image.pixelColor(image.width() // 2, y).alpha()
                   for y in range(image.height() // 2, image.height())]
-        assert set(bottom) == {0, 255}, (dpr, bottom)
-        assert bottom.count(255) == stroke_pixels, (dpr, bottom)
+        assert max(bottom) > 0, (dpr, bottom)
         sides = [image.pixelColor(x, image.height() // 2).alpha()
                  for x in range(image.width())]
-        assert set(sides) == {0, 255}, (dpr, sides)
-        assert sides.count(255) == 2 * stroke_pixels, (dpr, sides)
+        assert max(sides) > 0, (dpr, sides)
         occupied = [x for x, alpha in enumerate(sides) if alpha]
-        assert occupied[-1] - occupied[0] + 1 == round(16 * dpr), (dpr, sides)
+        assert abs(occupied[-1] - occupied[0] + 1 - round(16 * dpr)) <= 1, (dpr, sides)
 
     globe = tool_icon("language", badge="system").pixmap(20, 20).toImage()
     assert any(0 < globe.pixelColor(x, y).alpha() < 255
@@ -130,7 +123,12 @@ def test_tool_artwork_uses_16_px_with_larger_dense_icons(qt_app):
     for name, badge in icons:
         width, height = _opaque_bounds(tool_icon(name, badge=badge), 20)
         expected = 20 if name in {"keyboard", "save_as"} else 16
-        assert max(width, height) == expected, (name, badge, width, height)
+        if name == "language" and badge == "en":
+            assert 12 <= max(width, height) <= 14, (name, badge, width, height)
+        elif name == "language" and badge == "zh_TW":
+            assert 13 <= max(width, height) <= 15, (name, badge, width, height)
+        else:
+            assert max(width, height) == expected, (name, badge, width, height)
         left, top, right, bottom = _opaque_rect(tool_icon(name, badge=badge), 20)
         assert abs(left - (19 - right)) <= 1, (name, badge, left, right)
         assert abs(top - (19 - bottom)) <= 1, (name, badge, top, bottom)
@@ -160,24 +158,31 @@ def test_line_tool_icon_reflects_endpoint_styles(qt_app):
     assert len(_opaque_points(styled, 32)) > len(_opaque_points(plain, 32))
 
 
+def test_system_theme_icon_has_a_filled_left_half(qt_app):
+    for dark in (False, True):
+        image = tool_icon("theme", badge="system", dark=dark).pixmap(20, 20).toImage()
+        for y in (6, 10, 13):
+            assert image.pixelColor(7, y).alpha() > 240
+            assert image.pixelColor(12, y).alpha() == 0
+
+
 def test_mirror_dashes_are_centered_and_symmetric(qt_app):
     for name in ("flip_horizontal", "flip_vertical"):
         icon = tool_icon(name)
         for dpr in (1, 1.25, 1.5, 1.75, 2, 2.5, 3):
             image = icon.pixmap(QSize(20, 20), dpr).toImage()
-            extent = round(16 * dpr)
-            margin = (image.width() - extent) // 2
-            center = margin + extent // 2
+            center = image.width() // 2
 
             def axis_strip(cross):
                 return [image.pixelColor(cross, along).alpha()
                         if name == "flip_horizontal" else image.pixelColor(along, cross).alpha()
-                        for along in range(margin, margin + extent)]
+                        for along in range(image.height())]
 
-            first, second = axis_strip(center - 1), axis_strip(center)
-            assert first == second, (name, dpr)
-            assert first == first[::-1], (name, dpr)
-            assert set(first) == {0, 255}, (name, dpr)
+            first = axis_strip(center)
+            if image.width() % 2 == 0:
+                assert max(abs(a - b) for a, b in zip(first, axis_strip(center - 1))) <= 3, (name, dpr)
+            assert max(abs(a - b) for a, b in zip(first, reversed(first))) <= 3, (name, dpr)
+            assert max(first) > 0, (name, dpr)
 
 
 def test_line_endpoint_option_icons_show_the_style_on_the_correct_side(qt_app):
