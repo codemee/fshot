@@ -56,7 +56,7 @@ The theme button cycles through Follow System, Light, and Dark. Dark mode uses a
 
 Selected state buttons use the hover background and accent-colored icons: blue in light mode and lime in dark mode, making active tools and options easy to identify.
 
-The zoom group provides zoom in, zoom out, Fit to window, and the current percentage. Click the percentage to enter 1%–800%, then press Enter or Apply. Each tab retains its own scale; `Ctrl+0` resets it to 100%. Zoom only changes the display, leaving image content unchanged. A separator divides zoom tools from capture options such as Include cursor.
+The zoom group provides zoom in, zoom out, Fit to window, and the current percentage. Click the percentage to see its current value and enter 1%–800%, then press Enter or Apply. Each tab retains its own scale; `Ctrl+0` resets it to 100%. Zoom only changes the display, leaving image content unchanged. A separator divides zoom tools from capture options such as Include cursor.
 
 The keyboard icon opens the global shortcut settings for all four capture modes plus Repeat Previous Capture. Each shortcut can use <kbd>Ctrl</kbd>, <kbd>Shift</kbd>, <kbd>Option</kbd>/<kbd>Alt</kbd>, and an <kbd>A</kbd>–<kbd>Z</kbd> letter; <kbd>Shift</kbd> must be combined with <kbd>Ctrl</kbd> or <kbd>Option</kbd>/<kbd>Alt</kbd>. **Use defaults** restores the five default combinations in the panel. Changes are persisted only after OK successfully registers every shortcut; Cancel keeps the active settings unchanged.
 

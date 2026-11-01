@@ -81,6 +81,31 @@ def test_zoom_input_applies_only_on_confirmation(qt_app, tmp_path, method):
         window.deleteLater()
 
 
+def test_zoom_input_displays_current_percent_when_opened(qt_app):
+    window = EditorWindow()
+    window._add_image(QImage(100, 100, QImage.Format.Format_ARGB32), "image")
+    window._current_canvas().set_zoom(0.5)
+    observed = {}
+
+    def inspect():
+        menu = QApplication.activePopupWidget()
+        assert isinstance(menu, QMenu)
+        spin = menu.findChild(ArrowSpinBox, "zoomPercentSpin")
+        observed["value"] = spin.value()
+        observed["text"] = spin.lineEdit().text()
+        observed["selection"] = spin.lineEdit().selectedText()
+        menu.close()
+
+    QTimer.singleShot(0, inspect)
+    try:
+        window._show_zoom_panel()
+        assert observed == {"value": 50, "text": "50 %", "selection": ""}
+        assert window._current_canvas().zoom == 0.5
+    finally:
+        window.hide()
+        window.deleteLater()
+
+
 def test_zoom_group_separator_and_overflow(qt_app):
     window = EditorWindow()
     window._add_image(QImage(100, 100, QImage.Format.Format_ARGB32), "image")

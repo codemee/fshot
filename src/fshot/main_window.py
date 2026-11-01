@@ -665,7 +665,6 @@ class EditorWindow(QMainWindow):
         apply_button.clicked.connect(apply_zoom)
         menu.submitted.connect(apply_zoom)
         percent.setFocus()
-        percent.selectAll()
         menu.exec(self.mapToGlobal(self._toolbar_anchor(self.zoom_percent_action)))
         menu.deleteLater()
 
