@@ -11,6 +11,13 @@ from fshot.icons import camera_icon
 from test_app_updates import _controller
 
 
+@pytest.fixture(autouse=True)
+def isolate_startup_registration(monkeypatch):
+    # These tests simulate other platforms to check tray behavior. Startup
+    # registration is tested separately and must not access the host OS here.
+    monkeypatch.setattr(app_module.Autostart, "enabled", lambda self: False)
+
+
 @pytest.mark.parametrize("platform", ["darwin", "win32", "linux"])
 def test_application_icon_is_set_before_editor_is_shown(qt_app, tmp_path, monkeypatch, platform):
     monkeypatch.setattr(app_module.sys, "platform", platform)
