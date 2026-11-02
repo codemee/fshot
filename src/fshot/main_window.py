@@ -43,8 +43,6 @@ from PySide6.QtWidgets import (
     QStyle,
     QStyleFactory,
     QStyleOptionToolButton,
-    QStyledItemDelegate,
-    QStyleOptionViewItem,
     QTabBar,
     QTabWidget,
     QToolButton,
@@ -58,7 +56,7 @@ from fshot import __version__
 from fshot.dialogs import MessageDialog
 from fshot.canvas import CANVAS_PADDING, ImageCanvas
 from fshot.document import ShotDocument, make_tab_title
-from fshot.icons import camera_icon, line_end_style_icon, tool_icon
+from fshot.icons import camera_icon, line_combination_icon, tool_icon
 from fshot.hotkeys import HOTKEY_ACTIONS, HotkeyAction, HotkeyCombination, default_hotkeys
 from fshot.i18n import LanguageManager, LanguageMode
 from fshot.qt_image import pil_to_qimage
@@ -90,7 +88,6 @@ LAST_SAVE_DIRECTORY_KEY = "files/last_save_directory"
 TOOLBAR_ICON_SIZE = QSize(20, 20)
 TOOLBAR_BUTTON_SIZE = QSize(34, 34)
 TOOLBAR_DROPDOWN_SIZE = QSize(20, 34)
-LINE_END_STYLE_ICON_SIZE = QSize(64, 24)
 
 
 class TabNavigationStyle(QProxyStyle):
@@ -182,39 +179,6 @@ class EditorToolBar(QToolBar):
                 extension.move(self.width() - extension.width() - 12,
                                (self.height() - extension.height()) // 2)
         return result
-
-
-class LineEndStyleDelegate(QStyledItemDelegate):
-    """Draw full-size line previews in combo popups on every platform."""
-
-    _PADDING = 4
-
-    def sizeHint(self, option: QStyleOptionViewItem, index) -> QSize:
-        hint = super().sizeHint(option, index)
-        return QSize(
-            max(hint.width(), LINE_END_STYLE_ICON_SIZE.width() + self._PADDING * 2),
-            max(hint.height(), LINE_END_STYLE_ICON_SIZE.height() + self._PADDING * 2),
-        )
-
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index) -> None:
-        preview_option = QStyleOptionViewItem(option)
-        self.initStyleOption(preview_option, index)
-        preview_option.icon = QIcon()
-        preview_option.text = ""
-        style = preview_option.widget.style()
-        style.drawControl(QStyle.ControlElement.CE_ItemViewItem, preview_option, painter)
-
-        target = QRect(
-            preview_option.rect.left() + self._PADDING,
-            preview_option.rect.center().y() - LINE_END_STYLE_ICON_SIZE.height() // 2,
-            LINE_END_STYLE_ICON_SIZE.width(),
-            LINE_END_STYLE_ICON_SIZE.height(),
-        )
-        icon = index.data(Qt.ItemDataRole.DecorationRole)
-        if not isinstance(icon, QIcon) or icon.isNull():
-            return
-        pixmap = icon.pixmap(LINE_END_STYLE_ICON_SIZE)
-        painter.drawPixmap(target, pixmap, pixmap.rect())
 
 
 def _align_scrollbars_to_image(area: QScrollArea) -> None:
@@ -1004,81 +968,49 @@ class EditorWindow(QMainWindow):
     def _create_line_end_menu(self) -> QMenu:
         menu = QMenu(self)
         menu.setObjectName("lineEndMenu")
-        panel = QWidget(menu)
-        panel.setObjectName("lineEndPanel")
-        layout = QGridLayout(panel)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setHorizontalSpacing(10)
-        layout.setVerticalSpacing(8)
-
-        self.line_start_label = QLabel()
-        self.line_end_label = QLabel()
-        self.line_start_combo = QComboBox()
-        self.line_end_combo = QComboBox()
-        self.line_start_combo.setObjectName("lineStartStyle")
-        self.line_end_combo.setObjectName("lineEndStyle")
-        for combo in (self.line_start_combo, self.line_end_combo):
-            combo.setIconSize(LINE_END_STYLE_ICON_SIZE)
-            combo.view().setIconSize(LINE_END_STYLE_ICON_SIZE)
-            # The macOS style caps popup decorations at its native small-icon
-            # size, so draw these wide previews explicitly in the item view.
-            combo.setItemDelegate(LineEndStyleDelegate(combo))
-            combo.setMinimumWidth(88)
-        layout.addWidget(self.line_start_label, 0, 0)
-        layout.addWidget(self.line_start_combo, 0, 1)
-        layout.addWidget(self.line_end_label, 1, 0)
-        layout.addWidget(self.line_end_combo, 1, 1)
-
-        self.line_start_combo.currentIndexChanged.connect(
-            lambda: self._set_line_end_style("start", self.line_start_combo)
-        )
-        self.line_end_combo.currentIndexChanged.connect(
-            lambda: self._set_line_end_style("end", self.line_end_combo)
-        )
-        action = QWidgetAction(menu)
-        action.setDefaultWidget(panel)
-        menu.addAction(action)
+        self.line_style_actions = {}
+        group = QActionGroup(menu)
+        group.setExclusive(True)
+        for start in LineEndStyle:
+            for end in LineEndStyle:
+                action = QAction(menu)
+                action.setCheckable(True)
+                action.setData((start.value, end.value))
+                group.addAction(action)
+                button = QToolButton(menu)
+                button.setDefaultAction(action)
+                button.setIconSize(QSize(64, 24))
+                button.setMinimumSize(88, 32)
+                button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+                row = QWidgetAction(menu)
+                row.setDefaultWidget(button)
+                menu.addAction(row)
+                action.triggered.connect(menu.close)
+                action.triggered.connect(
+                    lambda checked=False, start=start, end=end: self._set_line_styles(start, end)
+                )
+                self.line_style_actions[start, end] = action
         self._refresh_line_end_panel()
         return menu
 
     def _refresh_line_end_panel(self) -> None:
-        self.line_start_label.setText(self._tr("line_start"))
-        self.line_end_label.setText(self._tr("line_end"))
-        choices = (
-            (LineEndStyle.NONE, "line_end_none"),
-            (LineEndStyle.ARROW, "line_end_arrow"),
-            (LineEndStyle.CIRCLE, "line_end_circle"),
-        )
-        for combo, endpoint, selected, accessible_name in (
-            (self.line_start_combo, "start", self.settings.line_start_style, self._tr("line_start")),
-            (self.line_end_combo, "end", self.settings.line_end_style, self._tr("line_end")),
-        ):
-            combo.blockSignals(True)
-            combo.clear()
-            combo.setAccessibleName(accessible_name)
-            for style, label_key in choices:
-                label = self._tr(label_key)
-                combo.addItem(
-                    line_end_style_icon(style.value, endpoint, dark=self._is_dark_theme()),
-                    "",
-                    style.value,
-                )
-                index = combo.count() - 1
-                combo.setItemData(index, label, Qt.ItemDataRole.ToolTipRole)
-                combo.setItemData(index, label, Qt.ItemDataRole.AccessibleDescriptionRole)
-            combo.setCurrentIndex(combo.findData(selected.value))
-            combo.blockSignals(False)
+        for (start, end), action in self.line_style_actions.items():
+            label = self._tr(
+                "line_combination",
+                start=self._tr(f"line_end_{start.value}"),
+                end=self._tr(f"line_end_{end.value}"),
+            )
+            action.setToolTip(label)
+            action.setText("")
+            action.setIcon(line_combination_icon(start.value, end.value, dark=self._is_dark_theme()))
+            action.setChecked((start, end) == (
+                self.settings.line_start_style, self.settings.line_end_style))
 
-    def _set_line_end_style(self, endpoint: str, combo: QComboBox) -> None:
-        value = combo.currentData()
-        if value is None:
-            return
-        style = LineEndStyle(value)
-        if endpoint == "start":
-            self.settings.line_start_style = style
-        else:
-            self.settings.line_end_style = style
+    def _set_line_styles(self, start: LineEndStyle, end: LineEndStyle) -> None:
+        self.settings.line_start_style = start
+        self.settings.line_end_style = end
         self.line_action.setIcon(self._line_icon())
+        self._refresh_line_end_panel()
 
     def _sync_line_tool_group(self, checked: bool) -> None:
         self.line_end_button.setProperty("lineSelected", checked)

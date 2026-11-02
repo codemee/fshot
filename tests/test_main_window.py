@@ -402,39 +402,22 @@ def test_line_button_and_dropdown_are_flush(qt_app):
     assert window.line_end_button.property("lineToolDropdown")
 
 
-def test_line_tool_has_independent_endpoint_style_menu(qt_app):
+def test_line_tool_selects_all_endpoint_combinations(qt_app):
     from fshot.main_window import EditorWindow
     from fshot.settings import LineEndStyle
-
     window = EditorWindow()
-
-    assert not hasattr(window, "arrow_action")
-    assert window.line_end_button.menu() is window.line_end_menu
-    assert window.line_start_combo.count() == 3
-    assert window.line_end_combo.count() == 3
-    for combo in (window.line_start_combo, window.line_end_combo):
-        assert combo.iconSize() == QSize(64, 24)
-        assert combo.view().iconSize() == combo.iconSize()
-        hint = combo.itemDelegate().sizeHint(
-            QStyleOptionViewItem(), combo.model().index(0, 0)
-        )
-        assert hint.width() >= 72
-        assert hint.height() >= 32
-
-    original_icon = window.line_action.icon().cacheKey()
-    window.line_start_combo.setCurrentIndex(
-        window.line_start_combo.findData(LineEndStyle.ARROW.value)
-    )
-    window.line_end_combo.setCurrentIndex(
-        window.line_end_combo.findData(LineEndStyle.CIRCLE.value)
-    )
-
-    assert window.settings.line_start_style is LineEndStyle.ARROW
-    assert window.settings.line_end_style is LineEndStyle.CIRCLE
-    assert window.line_action.icon().cacheKey() != original_icon
-
-    window.line_action.setChecked(True)
-    assert window.line_end_button.property("lineSelected") is True
+    try:
+        assert len(window.line_end_menu.actions()) == 9
+        for start in LineEndStyle:
+            for end in LineEndStyle:
+                action = window.line_style_actions[start, end]
+                action.trigger()
+                assert window.settings.line_start_style is start
+                assert window.settings.line_end_style is end
+                assert action.isChecked()
+                assert sum(a.isChecked() for a in window.line_style_actions.values()) == 1
+    finally:
+        window.deleteLater()
 
 
 def test_update_can_proceed_without_unsaved_documents(qt_app):

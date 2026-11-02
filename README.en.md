@@ -10,6 +10,8 @@ FShot is a desktop screenshot utility with global shortcuts, a persistent system
 - macOS Apple Silicon; Intel Macs are not supported.
 - Linux is not yet officially supported.
 
+Use **Start at login** in the tray menu to enable or disable automatic startup after login. It is off by default. Windows uses the current user startup registry entry; macOS uses a user LaunchAgent. Administrator access is not required. Disable it before moving the portable app or Python environment, then enable it again from the new location.
+
 ## Quick Start
 
 ### Desktop app
@@ -80,7 +82,7 @@ macOS uses the same <kbd>Ctrl</kbd>+<kbd>Shift</kbd> letter combinations. Grant 
 
 Editor shortcuts:
 
-The line tool also creates arrows and endpoint markers, with a solid circle at the start and an arrow at the end by default. Use the dropdown beside the line button to set the start and end independently to none, an arrow, or a solid circle.
+The line tool also creates arrows and endpoint markers, with a solid circle at the start and an arrow at the end by default. Use the dropdown beside the line button to choose one of nine line previews combining none, an arrow, and a solid circle. Hover over a preview for its endpoint description.
 The pixel measurement tool uses the same press-and-drag interaction as a rectangle and shows live horizontal and vertical deltas from the starting point. The reading remains after release until you measure again or switch tools. It is an editor-only overlay and never changes the image or adds an undo entry.
 The leading editor-tool group can also rotate the current image 90° clockwise or flip it horizontally or vertically. The downscale button opens a panel matching the line-style controls and accepts a 1–99% physical image size. These operations mark the document as modified and can be undone.
 

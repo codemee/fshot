@@ -106,16 +106,12 @@ def test_line_endpoint_panel_is_translated(qt_app, tmp_path):
     manager = LanguageManager(settings, QLocale("en_US"))
     window = EditorWindow(language_manager=manager)
 
-    assert window.line_start_label.text() == "Start"
-    assert window.line_end_combo.itemText(2) == ""
-    assert window.line_end_combo.itemIcon(2).isNull() is False
-    assert window.line_end_combo.itemData(2, Qt.ItemDataRole.ToolTipRole) == "Solid circle"
-
+    from fshot.settings import LineEndStyle
+    action = window.line_style_actions[LineEndStyle.CIRCLE, LineEndStyle.ARROW]
+    assert action.text() == ""
+    assert action.toolTip() == "Start: Solid circle / End: Arrow"
     manager.set_mode(LanguageMode.ZH_TW)
-
-    assert window.line_start_label.text() == "起點"
-    assert window.line_end_combo.itemData(0, Qt.ItemDataRole.ToolTipRole) == "無箭頭"
-    assert window.line_end_combo.itemData(2, Qt.ItemDataRole.ToolTipRole) == "實心圓"
+    assert action.toolTip() == "起點：實心圓／終點：箭頭"
 
 
 def test_update_messages_are_translated(tmp_path):

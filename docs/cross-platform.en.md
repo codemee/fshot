@@ -93,3 +93,5 @@ Linux is not currently a primary target. X11 and Wayland differ substantially in
 - A 90° clockwise rotation swaps image dimensions; horizontal/vertical flips reflect content along the selected axis; proportional downscaling accepts only 1–99%. Each operation is undoable, and save/copy uses the transformed image.
 - Pixel measurement shows live horizontal and vertical deltas while dragging, remains based on source-image pixels at every zoom level, and does not modify exported images.
 - Minimize/hide, tray double-click, and tray Exit work.
+
+Start at login uses the current user Run registry value on Windows and `~/Library/LaunchAgents/io.github.codemee.fshot.plist` on macOS, taking effect at the next login. Verify enabling, disabling, checked state after restarting, paths containing spaces, and permission errors. macOS login startup requires device verification.

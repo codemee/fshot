@@ -465,6 +465,11 @@ def _draw_tool_icon(
 
 
 def line_end_style_icon(style: str, endpoint: str, dark: bool = False) -> QIcon:
+    return line_combination_icon(style if endpoint == "start" else "none",
+                                 style if endpoint == "end" else "none", dark)
+
+
+def line_combination_icon(start_style: str, end_style: str, dark: bool = False) -> QIcon:
     pixmap = QPixmap(64, 24)
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = _painter(pixmap)
@@ -481,10 +486,8 @@ def line_end_style_icon(style: str, endpoint: str, dark: bool = False) -> QIcon:
     start = QPoint(8, 12)
     end = QPoint(56, 12)
     painter.drawLine(start, end)
-    if endpoint == "start":
-        _draw_line_end_icon(painter, start, ((16, 6), (16, 18)), style, ink, circle_radius=4)
-    else:
-        _draw_line_end_icon(painter, end, ((48, 6), (48, 18)), style, ink, circle_radius=4)
+    _draw_line_end_icon(painter, start, ((16, 6), (16, 18)), start_style, ink, circle_radius=4)
+    _draw_line_end_icon(painter, end, ((48, 6), (48, 18)), end_style, ink, circle_radius=4)
     painter.end()
     return QIcon(pixmap)
 

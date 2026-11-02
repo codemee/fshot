@@ -36,6 +36,7 @@ from fshot.i18n import LanguageManager
 from fshot.main_window import EditorWindow
 from fshot.settings import CaptureMode, CaptureSettings
 from fshot.theme import ThemeManager
+from fshot.autostart import Autostart
 from fshot.updates import GITHUB_RELEASES_URL, GitHubReleaseUpdater, UpdateManager
 
 if sys.platform == "win32":
@@ -413,6 +414,17 @@ class FShotApplication(QObject):
         self.automatic_updates_action.setChecked(self.update_manager.automatic_checks_enabled)
         self.automatic_updates_action.toggled.connect(self._automatic_update_checks_toggled)
         menu.addAction(self.automatic_updates_action)
+        self.autostart = Autostart()
+        self.autostart_action = QAction(self.language_manager.text("autostart"), menu)
+        self.autostart_action.setCheckable(True)
+        self.autostart_action.setEnabled(self.autostart.supported)
+        try:
+            self.autostart_action.setChecked(self.autostart.enabled())
+        except OSError:
+            self.autostart_action.setEnabled(False)
+        self.autostart_action.toggled.connect(self._autostart_toggled)
+        menu.addAction(self.autostart_action)
+        menu.aboutToShow.connect(self._refresh_autostart)
         menu.addSeparator()
         self.exit_action = QAction(self.language_manager.text("exit"), menu)
         self.exit_action.triggered.connect(self.quit)
@@ -435,6 +447,24 @@ class FShotApplication(QObject):
             self.language_manager.text("automatic_update_checks")
         )
         self.exit_action.setText(self.language_manager.text("exit"))
+        self.autostart_action.setText(self.language_manager.text("autostart"))
+
+    def _refresh_autostart(self) -> None:
+        try:
+            enabled = self.autostart.enabled()
+        except OSError:
+            return
+        self.autostart_action.blockSignals(True)
+        self.autostart_action.setChecked(enabled)
+        self.autostart_action.blockSignals(False)
+
+    def _autostart_toggled(self, enabled: bool) -> None:
+        try:
+            self.autostart.set_enabled(enabled)
+        except OSError as exc:
+            self._refresh_autostart()
+            self.tray.showMessage("FShot", self.language_manager.text("autostart_failed", error=str(exc)),
+                                  QSystemTrayIcon.MessageIcon.Warning)
 
     def _automatic_update_checks_toggled(self, enabled: bool) -> None:
         self.update_manager.set_automatic_checks_enabled(enabled)

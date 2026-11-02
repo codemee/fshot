@@ -10,6 +10,8 @@ FShot 是桌面截圖工具，提供全域快捷鍵、系統匣常駐、多頁�
 - macOS Apple Silicon；不支援 Intel Mac。
 - Linux 尚未正式支援。
 
+系統匣選單的「開機自動執行」可設定或取消登入後自動啟動，預設不啟用。Windows 使用目前使用者的啟動設定，macOS 使用使用者 LaunchAgent，不需要管理員權限。移動可攜版或 Python 環境前，請先取消，移動後再重新啟用。
+
 ## Quick Start
 
 ### 桌面應用程式
@@ -64,7 +66,7 @@ uv tool upgrade fshot
 | --- | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/pen.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/pen.png"><img src="docs/images/toolbar/pen.png" width="28" height="28" alt="自由畫筆"></picture> | 自由畫筆 | 在圖片上拖曳繪製自由線條。<kbd>Alt</kbd>+<kbd>P</kbd> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/line.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/line.png"><img src="docs/images/toolbar/line.png" width="28" height="28" alt="線條"></picture> | 線條／箭頭 | 拖曳繪製直線，預設以實心圓起始、箭頭結束。<kbd>Alt</kbd>+<kbd>L</kbd> |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/line_dropdown.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/line_dropdown.png"><img src="docs/images/toolbar/line_dropdown.png" width="28" height="28" alt="線條樣式下拉"></picture> | 線條端點樣式 | 點擊線條按鈕右側的小箭頭，分別設定起點與終點為無、箭頭或實心圓。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/line_dropdown.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/line_dropdown.png"><img src="docs/images/toolbar/line_dropdown.png" width="28" height="28" alt="線條樣式下拉"></picture> | 線條端點樣式 | 點擊線條按鈕右側的小箭頭，直接選取無、箭頭與實心圓的九種線條預覽；滑鼠停留時顯示起點／終點樣式提示。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/rectangle.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/rectangle.png"><img src="docs/images/toolbar/rectangle.png" width="28" height="28" alt="矩形"></picture> | 矩形 | 拖曳繪製矩形框。<kbd>Alt</kbd>+<kbd>R</kbd> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/measure.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/measure.png"><img src="docs/images/toolbar/measure.png" width="28" height="28" alt="丈量像素"></picture> | 丈量像素 | 拖曳顯示橫向、縱向像素差；放開保留讀值，重新丈量或切換工具時清除。讀值不寫入圖片。<kbd>Alt</kbd>+<kbd>D</kbd> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/text.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/text.png"><img src="docs/images/toolbar/text.png" width="28" height="28" alt="文字"></picture> | 文字 | 在圖片上加入文字。<kbd>Alt</kbd>+<kbd>T</kbd> |
