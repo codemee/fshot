@@ -64,4 +64,3 @@ class Autostart:
                 path.unlink(missing_ok=True)
         else:
             raise OSError('Autostart is unavailable on this platform')
-
