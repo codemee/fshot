@@ -138,6 +138,7 @@
   - 深色採初號機風格：深紫底色、紫色面板、螢光綠選取與焦點、橘色提示。`DARK_COLORS` 共用於 palette、stylesheet、圖示遮罩與文件圖片；螢光綠底上的文字使用深色，維持選取狀態的對比。
   - `ThemeManager` 在 application 層建立並注入 `EditorWindow`，統一管理 palette、stylesheet 與依主題重繪的工具列圖示。
   - 淺色與深色面板使用對應色票但維持相同控制項結構；數值欄位由 `ArrowSpinBox` 提供跨平台一致且可連續操作的上下按鈕。
+  - 數值欄位只由外層 QSpinBox 樣式預留箭頭空間；內層 QLineEdit 不重複加入邊框、內距或箭頭留白，避免縮放比例的數字與百分號被裁切。
 
 - `i18n.py`
   - 管理跟隨系統、繁體中文與英文三種語言模式，使用 `QLocale` 判斷系統語言並透過 `QSettings` 持久化。

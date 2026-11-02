@@ -242,7 +242,8 @@ class ArrowSpinBox(QSpinBox):
     def __init__(self) -> None:
         super().__init__()
         self.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        self.lineEdit().setTextMargins(0, 0, self.BUTTON_WIDTH, 0)
+        # QSpinBox's stylesheet already reserves the custom arrow column.
+        # Reserving it again in the line edit clips numeric text.
         self.up_button = self._arrow_button(Qt.ArrowType.UpArrow, self.stepUp)
         self.down_button = self._arrow_button(Qt.ArrowType.DownArrow, self.stepDown)
 

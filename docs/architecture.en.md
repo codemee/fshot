@@ -39,6 +39,7 @@ This document introduces the FShot codebase. Read [cross-platform.en.md](cross-p
 - `settings.py`: defines `CaptureMode`, `Tool`, `LineEndStyle`, `CaptureSettings`, and `DrawingSettings`.
 - `hotkeys.py`: defines configurable combinations for the four capture modes and the repeat action, validates them, and persists them with `QSettings`. The UI edits a temporary copy; Windows probes conflicts with `RegisterHotKey` and replaces active registrations only after every new shortcut succeeds.
 - `theme.py`: manages System, Light, and Dark modes through `QSettings`, application palettes/stylesheets, and theme-aware icon redraw. Dark mode uses a Unit-01-inspired deep-purple palette with purple panels, lime selection/focus accents, and amber alerts. `DARK_COLORS` is shared by the palette, stylesheet, icon masks, and documentation tiles; text on lime backgrounds is dark to preserve contrast. `ArrowSpinBox` provides consistent cross-platform numeric controls.
+  - Only the outer QSpinBox stylesheet reserves the arrow column. Its inner QLineEdit has no duplicate border, padding, or arrow margin, keeping zoom digits and the percent suffix visible.
 - `i18n.py`: manages System, Traditional Chinese, and English modes. It detects the system language, persists overrides, and emits changes that retranslate the editor/tray. Tooltips combine translated labels with `QAction` shortcuts.
 - `qt_image.py`: converts between Pillow and Qt image types.
 

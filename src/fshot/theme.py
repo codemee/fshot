@@ -241,6 +241,7 @@ def _stylesheet(mode: ThemeMode) -> str:
                 selection-color: $on_accent;
             }
             QLineEdit:focus { border-color: $accent; }
+            QSpinBox QLineEdit { background: transparent; border: 0; padding: 0; }
             QDialog#messageDialog { background: $window; }
             QLabel#messageHeading { color: $text; font-size: 16px; font-weight: 600; }
             QTextEdit#messageBody { background: transparent; color: $muted; border: 0; padding: 0; font-size: 13px; }
@@ -325,6 +326,7 @@ def _stylesheet(mode: ThemeMode) -> str:
             selection-background-color: #1971c2;
         }
         QSpinBox:hover, QSpinBox:focus { border-color: #339af0; }
+        QSpinBox QLineEdit { background: transparent; border: 0; padding: 0; }
         QComboBox {
             background: #ffffff;
             color: #343a40;

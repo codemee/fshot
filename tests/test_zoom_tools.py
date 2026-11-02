@@ -2,10 +2,11 @@ import pytest
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QImage
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QMenu, QPushButton, QToolBar
+from PySide6.QtWidgets import QApplication, QMenu, QPushButton, QStyle, QStyleOptionFrame, QToolBar
 
 from fshot.canvas import CANVAS_PADDING
 from fshot.main_window import ArrowSpinBox, EditorWindow
+from fshot.theme import ThemeMode
 
 
 def test_fit_uses_available_viewport_without_changing_image(qt_app, tmp_path):
@@ -103,6 +104,48 @@ def test_zoom_input_displays_current_percent_when_opened(qt_app):
         assert window._current_canvas().zoom == 0.5
     finally:
         window.hide()
+        window.deleteLater()
+
+
+@pytest.mark.parametrize("mode", [ThemeMode.LIGHT, ThemeMode.DARK])
+@pytest.mark.parametrize("point_size", [13, 18])
+def test_zoom_input_has_space_for_visible_digits_and_suffix(qt_app, mode, point_size):
+    window = EditorWindow()
+    original_mode = window.theme_manager.mode
+    window.theme_manager.set_mode(mode)
+    font = window.font()
+    font.setPointSize(point_size)
+    window.setFont(font)
+    window._add_image(QImage(10, 10, QImage.Format.Format_ARGB32), "image")
+    observed = {}
+
+    def inspect():
+        menu = QApplication.activePopupWidget()
+        try:
+            spin = menu.findChild(ArrowSpinBox, "zoomPercentSpin")
+            spin.setValue(800)
+            edit = spin.lineEdit()
+            option = QStyleOptionFrame()
+            edit.initStyleOption(option)
+            rect = edit.style().subElementRect(QStyle.SubElement.SE_LineEditContents, option, edit)
+            margins = edit.textMargins()
+            observed["width"] = rect.width() - margins.left() - margins.right()
+            observed["height"] = rect.height() - margins.top() - margins.bottom()
+            observed["text_width"] = edit.fontMetrics().horizontalAdvance(edit.text()) + 4
+            observed["text_height"] = edit.fontMetrics().height()
+            observed["clear_of_arrows"] = edit.geometry().right() < spin.up_button.x()
+        finally:
+            menu.close()
+
+    QTimer.singleShot(0, inspect)
+    try:
+        window._show_zoom_panel()
+        assert observed["width"] >= observed["text_width"]
+        assert observed["height"] >= observed["text_height"]
+        assert observed["clear_of_arrows"]
+    finally:
+        window.hide()
+        window.theme_manager.set_mode(original_mode)
         window.deleteLater()
 
 
