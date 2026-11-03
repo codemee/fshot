@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 import string
 import sys
 from ctypes import wintypes
@@ -52,6 +54,7 @@ from PySide6.QtWidgets import (
     QWidgetAction,
 )
 
+from fshot.workspace import EditorPane, SplitWorkspace
 from fshot import __version__
 from fshot.dialogs import MessageDialog
 from fshot.canvas import CANVAS_PADDING, ImageCanvas
@@ -332,42 +335,21 @@ class EditorWindow(QMainWindow):
         self._hotkey_applier: Callable | None = None
         self._resize_percent = 50
         self.active_tool = Tool.PEN
-        self.tabs = QTabWidget()
-        self.tabs.setTabBar(EditorTabBar(self.tabs))
-        self.tabs.setObjectName("editorTabs")
-        self.tabs.setTabsClosable(True)
-        self.tabs.setUsesScrollButtons(True)
-        # macOS otherwise elides labels to fit before showing scroll buttons.
-        self.tabs.setElideMode(Qt.TextElideMode.ElideNone)
-        self.tabs.tabBar().setExpanding(False)
-        self.tabs.currentChanged.connect(self._current_changed)
-        self.tabs.tabCloseRequested.connect(self._close_tab)
-        self.tabs.tabBarDoubleClicked.connect(self._start_tab_rename)
+        self._rename_tab_index = None
+        self._rename_commit_active = False
+        self._active_pane = None
+        self.workspace = SplitWorkspace(self)
+        self.workspace.setObjectName("splitWorkspace")
+        pane = self._create_editor_pane()
+        self.workspace.add_initial(pane)
+        self._load_pane(pane)
+        self._active_pane = pane
         workspace = QWidget()
         workspace.setObjectName("editorWorkspace")
         workspace_layout = QVBoxLayout(workspace)
-        workspace_layout.setContentsMargins(12, 8, 12, 12)
-        workspace_layout.setSpacing(0)
-        workspace_layout.addWidget(self.tabs)
+        workspace_layout.setContentsMargins(12, 0, 12, 12)
+        workspace_layout.addWidget(self.workspace)
         self.setCentralWidget(workspace)
-        self.documents: dict[int, ShotDocument] = {}
-        self._rename_tab_index: int | None = None
-        self._rename_commit_active = False
-        self._tab_name_editor = TabNameEditor(self.tabs.tabBar())
-        self._tab_name_editor.setObjectName("tabNameEditor")
-        self._tab_name_editor.hide()
-        self._tab_name_editor.accepted.connect(self._commit_tab_rename)
-        self._tab_name_editor.cancelled.connect(self._cancel_tab_rename)
-        self.tab_menu_button = TabMenuButton()
-        self.tab_menu_button.setObjectName("tabMenuButton")
-        self.tab_menu_button.setFixedWidth(28)
-        self.tab_menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        self.tab_menu_button.setAutoRaise(True)
-        self.tab_menu_button.setToolTip("Open tabs")
-        self.tab_menu = QMenu(self)
-        self.tab_menu_button.setMenu(self.tab_menu)
-        self.tab_menu_button.hide()
-        self.tabs.setCornerWidget(self.tab_menu_button, Qt.Corner.TopRightCorner)
         self._build_tab_shortcuts()
         self._build_toolbar()
         self._build_about_menu()
@@ -377,6 +359,120 @@ class EditorWindow(QMainWindow):
         self._update_title()
         self._update_actions()
         self.resize(1100, 760)
+
+    def _create_editor_pane(self):
+        pane = EditorPane(self.workspace)
+        pane.setTabBar(EditorTabBar(pane))
+        pane.setObjectName("editorTabs")
+        pane.setTabsClosable(True)
+        pane.setUsesScrollButtons(True)
+        # macOS otherwise elides labels to fit before showing scroll buttons.
+        pane.setElideMode(Qt.TextElideMode.ElideNone)
+        pane.tabBar().setExpanding(False)
+        pane.currentChanged.connect(lambda index: self._pane_call(pane, self._current_changed, index))
+        pane.tabCloseRequested.connect(lambda index: self._pane_call(pane, self._close_tab, index))
+        pane.tabBarDoubleClicked.connect(lambda index: self._pane_call(pane, self._start_tab_rename, index))
+        pane.name_editor = TabNameEditor(pane.tabBar())
+        pane.name_editor.setObjectName("tabNameEditor")
+        pane.name_editor.hide()
+        pane.name_editor.accepted.connect(lambda: self._pane_call(pane, self._commit_tab_rename))
+        pane.name_editor.cancelled.connect(lambda: self._pane_call(pane, self._cancel_tab_rename))
+        pane.menu_button = TabMenuButton()
+        pane.menu_button.setObjectName("tabMenuButton")
+        pane.menu_button.setFixedWidth(28)
+        pane.menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        pane.menu_button.setAutoRaise(True)
+        pane.menu_button.setToolTip("Open tabs")
+        pane.menu = QMenu(self)
+        pane.menu_button.setMenu(pane.menu)
+        pane.menu_button.hide()
+        pane.setCornerWidget(pane.menu_button, Qt.Corner.TopRightCorner)
+        self.workspace.watch(pane)
+        return pane
+
+    def _load_pane(self, pane):
+        self.tabs = pane
+        self.documents = pane.documents
+        self._tab_name_editor = pane.name_editor
+        self.tab_menu_button = pane.menu_button
+        self.tab_menu = pane.menu
+
+    @contextmanager
+    def _pane_context(self, pane):
+        previous = self.tabs
+        self._load_pane(pane)
+        try:
+            yield
+        finally:
+            self._load_pane(previous)
+
+    def _activate_pane(self, pane):
+        if pane is self._active_pane:
+            return
+        self._cancel_tab_rename()
+        self._active_pane = pane
+        self._load_pane(pane)
+        self._update_pane_highlights()
+        self._current_changed(pane.currentIndex())
+
+    def _update_pane_highlights(self):
+        for pane in self.workspace.panes:
+            active = len(self.workspace.panes) > 1 and pane is self._active_pane
+            if pane.property("activePane") != active:
+                pane.setProperty("activePane", active)
+                pane.style().unpolish(pane)
+                pane.style().polish(pane)
+                pane.update()
+
+    def _pane_call(self, pane, callback, *args):
+        self._activate_pane(pane)
+        callback(*args)
+
+    def _pane_overflow(self, pane):
+        if hasattr(pane, 'menu_button') and hasattr(self, 'tabs'):
+            with self._pane_context(pane):
+                self._update_tab_overflow()
+
+    def _all_documents(self):
+        return [doc for pane in self.workspace.panes for doc in pane.documents.values()]
+
+    def _move_tab(self, source, index, target, edge="center", insertion=-1):
+        if source not in self.workspace.panes or target not in self.workspace.panes:
+            return
+        if index not in source.documents:
+            return
+        if source is target and source.count() == 1 and edge != "center":
+            return
+        self._activate_pane(source)
+        self._cancel_tab_rename()
+        if edge != "center":
+            new_pane = self._create_editor_pane()
+            self.workspace.split(target, new_pane, edge)
+            target = new_pane
+        page = source.widget(index)
+        doc = source.documents[index]
+        source.blockSignals(True)
+        target.blockSignals(True)
+        try:
+            source.removeTab(index)
+            docs = [d for i, d in sorted(source.documents.items()) if i != index]
+            source.documents.clear()
+            source.documents.update(enumerate(docs))
+            insertion = target.count() if insertion < 0 else min(insertion, target.count())
+            docs = [d for _, d in sorted(target.documents.items())]
+            docs.insert(insertion, doc)
+            target.insertTab(insertion, page, doc.display_title)
+            target.documents.clear()
+            target.documents.update(enumerate(docs))
+            target.setCurrentIndex(insertion)
+        finally:
+            source.blockSignals(False)
+            target.blockSignals(False)
+        self._active_pane = target
+        self._load_pane(target)
+        self.workspace.remove_empty(source)
+        self._refresh_tabs()
+        self._current_changed(target.currentIndex())
 
     def _build_tab_shortcuts(self) -> None:
         self.next_tab_action = QAction(self)
@@ -430,6 +526,8 @@ class EditorWindow(QMainWindow):
         area = QScrollArea()
         _align_scrollbars_to_image(area)
         area.setWidget(canvas)
+        for widget in (canvas, area, area.viewport(), area.horizontalScrollBar(), area.verticalScrollBar()):
+            widget.installEventFilter(self.workspace)
         area.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         index = self.tabs.addTab(area, title)
         self._ensure_tab_status_widget(index)
@@ -533,10 +631,12 @@ class EditorWindow(QMainWindow):
     def _save_document(self, doc: ShotDocument, *, choose_path: bool = False) -> bool:
         if doc.path is not None and not choose_path:
             return self._save_to_path(doc, doc.path)
-        for index, candidate in self.documents.items():
-            if candidate is doc:
-                self.tabs.setCurrentIndex(index)
-                break
+        for pane in self.workspace.panes:
+            for index, candidate in pane.documents.items():
+                if candidate is doc:
+                    self._activate_pane(pane)
+                    self.tabs.setCurrentIndex(index)
+                    break
         default_path = self._default_save_path(doc)
         path, selected = QFileDialog.getSaveFileName(
             self,
@@ -657,7 +757,7 @@ class EditorWindow(QMainWindow):
         event.ignore()
 
     def confirm_discard_all(self, message_key: str = "close_discard_all") -> bool:
-        documents = [doc for doc in self.documents.values() if doc.is_dirty]
+        documents = [doc for doc in self._all_documents() if doc.is_dirty]
         return self._confirm_unsaved(documents, message_key)
 
     def _confirm_unsaved(self, documents: list[ShotDocument], message_key: str) -> bool:
@@ -1523,7 +1623,10 @@ class EditorWindow(QMainWindow):
         return self.documents.get(self.tabs.currentIndex())
 
     def _mark_current_dirty(self) -> None:
-        doc = self._current_doc()
+        sender = self.sender()
+        doc = next((doc for doc in self._all_documents() if doc.image is sender), None)
+        if doc is None:
+            doc = self._current_doc()
         if doc:
             doc.mark_dirty()
         self._refresh_tabs()
@@ -1545,8 +1648,16 @@ class EditorWindow(QMainWindow):
             return
         if doc.is_dirty and not self._confirm_unsaved([doc], "close_discard_tab"):
             return
+        page = self.tabs.widget(index)
+        self.tabs.blockSignals(True)
         self.tabs.removeTab(index)
         self._reindex_documents(index)
+        self.tabs.blockSignals(False)
+        page.deleteLater()
+        if not self.tabs.count() and len(self.workspace.panes) > 1:
+            empty = self.tabs
+            self._activate_pane(next(p for p in self.workspace.panes if p is not empty))
+            self.workspace.remove_empty(empty)
         self._refresh_tabs()
 
     def _pick_tab(self, picker_index: int) -> None:
@@ -1560,14 +1671,33 @@ class EditorWindow(QMainWindow):
                 new_docs[index] = doc
             elif index > closed_index:
                 new_docs[index - 1] = doc
-        self.documents = new_docs
+        self.documents.clear()
+        self.documents.update(new_docs)
 
     def _discard_all_tabs(self) -> None:
-        self.tabs.clear()
-        self.documents.clear()
+        for pane in list(self.workspace.panes):
+            pane.blockSignals(True)
+            pages = [pane.widget(i) for i in range(pane.count())]
+            pane.clear()
+            pane.documents.clear()
+            pane.blockSignals(False)
+            for page in pages:
+                page.deleteLater()
+        keep = self._active_pane
+        for pane in list(self.workspace.panes):
+            if pane is not keep:
+                self.workspace.remove_empty(pane)
         self._refresh_tabs()
 
     def _refresh_tabs(self) -> None:
+        self._update_pane_highlights()
+        for pane in self.workspace.panes:
+            with self._pane_context(pane):
+                self._refresh_pane_tabs()
+        self._update_title()
+        self._update_actions()
+
+    def _refresh_pane_tabs(self) -> None:
         current = self.tabs.currentIndex()
         for i in range(self.tabs.count()):
             doc = self.documents.get(i)
@@ -1579,7 +1709,7 @@ class EditorWindow(QMainWindow):
             action = self.tab_menu.addAction(self.tabs.tabText(i))
             action.setCheckable(True)
             action.setChecked(i == current)
-            action.triggered.connect(lambda _checked=False, index=i: self.tabs.setCurrentIndex(index))
+            action.triggered.connect(lambda _checked=False, index=i, pane=self.tabs: self._pane_call(pane, pane.setCurrentIndex, index))
         self._update_title()
         self._update_actions()
         self._update_tab_overflow()
@@ -1647,7 +1777,11 @@ class EditorWindow(QMainWindow):
         return button
 
     def _close_tab_widget(self, widget: QWidget) -> None:
-        tab_bar = self.tabs.tabBar()
+        pane = next((p for p in self.workspace.panes if p.isAncestorOf(widget)), None)
+        if pane is None:
+            return
+        self._activate_pane(pane)
+        tab_bar = pane.tabBar()
         for index in range(tab_bar.count()):
             if widget in (
                 tab_bar.tabButton(index, QTabBar.ButtonPosition.LeftSide),
@@ -1715,7 +1849,7 @@ class EditorWindow(QMainWindow):
             action.setEnabled(self.tabs.count() > 0 if number == 9 else number <= self.tabs.count())
 
     def _has_dirty_documents(self) -> bool:
-        return any(doc.is_dirty for doc in self.documents.values())
+        return any(doc.is_dirty for doc in self._all_documents())
 
     def _style_icon(self) -> QIcon:
         return tool_icon("style", self.settings.color, self.settings.line_width, dark=self._is_dark_theme())
@@ -1806,7 +1940,8 @@ class EditorWindow(QMainWindow):
         if self.application_menu_bar is not None:
             self.about_menu.setTitle(self._tr("help_menu"))
         self._refresh_line_end_panel()
-        self.tab_menu_button.setToolTip(self._tr("open_tabs"))
+        for pane in self.workspace.panes:
+            pane.menu_button.setToolTip(self._tr("open_tabs"))
         self.cursor_action.setText(self._tr("include_cursor"))
         self._set_include_cursor(self.capture_settings.include_cursor)
         self._set_screen_mode(self.capture_settings.virtual_screen)
@@ -1864,8 +1999,10 @@ class EditorWindow(QMainWindow):
         self.language_action.setIcon(
             tool_icon("language", badge=self.language_manager.mode.value, dark=dark)
         )
-        for index in range(self.tabs.count()):
-            self._ensure_tab_status_widget(index)
+        for pane in self.workspace.panes:
+            with self._pane_context(pane):
+                for index in range(pane.count()):
+                    self._ensure_tab_status_widget(index)
 
     def _toolbar_anchor(self, action: QAction) -> QPoint:
         for toolbar in self.findChildren(QToolBar):
@@ -1884,4 +2021,5 @@ class EditorWindow(QMainWindow):
         total_width = tab_bar.sizeHint().width()
         available = max(0, self.tabs.width() - 8)
         self.tab_menu_button.setVisible(total_width > available and self.tabs.count() > 0)
-        self._position_tab_name_editor()
+        if self.tabs is self._active_pane:
+            self._position_tab_name_editor()

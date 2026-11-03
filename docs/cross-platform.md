@@ -132,3 +132,5 @@ Linux 尚未作為主要目標。Wayland/X11 差異很大，尤其是全域快�
 - 最小化隱藏、系統匣雙擊顯示、右鍵退出正常。
 
 開機自動執行在 Windows 使用目前使用者的 Run 登錄值，在 macOS 使用 `~/Library/LaunchAgents/io.github.codemee.fshot.plist`，下次登入生效。手動驗收需確認啟用、取消、重新啟動後勾選狀態、路徑含空白與權限錯誤；macOS 尚需實機驗證登入後啟動。
+
+分割窗格使用共用 Qt QDrag／QSplitter，不涉及平台原生視窗。Windows 與 macOS 手動驗收：拖曳門檻、左／右／下預覽、中央合併、跨窗格移動、拖曳取消、巢狀分隔線比例、各窗格獨立標籤溢位清單、深淺色與不同 DPI，以及跨窗格未儲存確認。

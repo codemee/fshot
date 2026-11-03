@@ -52,7 +52,7 @@ FShot starts with its editor hidden and remains in the system tray. Double-click
 
 Shortcut settings, theme, and language form a group at the right edge of the toolbar, separated from the other tools. They remain available through the overflow menu in narrow windows.
 
-Below the toolbar, a flat tab row and a thin content frame share aligned horizontal edges. Thin chevrons at opposite ends of the tab row scroll overflowing tabs, and a downward chevron on the right opens the tab list. Both Windows and macOS retain full tab labels. Small squares continue to mark unsaved changes.
+Below the toolbar, a rounded frame encloses both the tab row and image area, with aligned horizontal edges. Its top border separates the workspace from the toolbar, which has no additional bottom rule. Thin chevrons at opposite ends of the tab row scroll overflowing tabs, and a downward chevron on the right opens the tab list. Both Windows and macOS retain full tab labels. Small squares continue to mark unsaved changes.
 
 The theme button cycles through Follow System, Light, and Dark. Dark mode uses an Evangelion Unit-01-inspired purple and lime palette. The language button cycles through Follow System, Traditional Chinese, and English. Both choices are persisted. Toolbar tooltips follow the selected language and include shortcuts where available.
 
@@ -118,6 +118,12 @@ These Windows/Linux shortcuts work within the editor window:
 On macOS, closing and numbered selection use <kbd>⌘</kbd>; previous/next use Qt's platform-standard bindings. Closing the last tab leaves the editor window open.
 
 Before closing tabs, closing the editor, quitting, or updating, unsaved screenshots can be saved, discarded, or kept by cancelling. Save all processes each document separately; cancelling a save or encountering a write error preserves the tabs and stops the close/update. Closing the editor leaves FShot in the system tray.
+
+## Split panes
+
+Drag a tab to the left, right, or bottom edge of any pane's content area. A placement preview shows where the new pane will appear. Split existing panes again to create nested layouts, and drag the dividers to adjust their width and height ratios.
+
+Each pane has its own tab bar and tab list. Drop a tab in another pane's center or tab bar to move it there; drop within the same tab bar to reorder. Moving or closing the last tab collapses the empty pane. Click a pane to make it active, indicated by an accent border. Zoom, undo, and save act on its current image. Moving a tab preserves its zoom, edits, and unsaved state. Quitting checks unsaved images across all panes.
 
 ## More help
 

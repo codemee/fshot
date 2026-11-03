@@ -125,8 +125,11 @@ def _stylesheet(mode: ThemeMode) -> str:
             QMainWindow, QDialog { background: $window; }
             QWidget#editorWorkspace { background: $window; }
             QTabWidget#editorTabs { background: transparent; }
-            QTabWidget#editorTabs::pane { background: $base; border: 1px solid $raised; border-radius: 6px; }
-            QToolBar { background: $window; border: 0; border-bottom: 1px solid $raised; spacing: 4px; padding: 0px 4px; }
+            QTabWidget#editorTabs[activePane="true"] { border-color: $accent; }
+            QTabWidget#editorTabs { border: 1px solid $raised; border-radius: 6px; padding: 1px; }
+            QTabWidget#editorTabs::pane { background: $base; border: 0; }
+            QTabWidget#editorTabs::tab-bar { top: 1px; }
+            QToolBar { background: $window; border: 0; spacing: 4px; padding: 0px 4px; }
             QToolBar::separator { background: $raised; width: 1px; margin: 8px 2px; }
             QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
             /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
@@ -260,9 +263,12 @@ def _stylesheet(mode: ThemeMode) -> str:
         QMainWindow { background: #f5f6f8; }
         QWidget#editorWorkspace { background: #f5f6f8; }
         QTabWidget#editorTabs { background: transparent; }
-        QTabWidget#editorTabs::pane { background: #f5f6f8; border: 1px solid #d6d8dc; border-radius: 6px; }
+        QTabWidget#editorTabs[activePane="true"] { border-color: #1971c2; }
+        QTabWidget#editorTabs { border: 1px solid #d6d8dc; border-radius: 6px; padding: 1px; }
+        QTabWidget#editorTabs::pane { background: #f5f6f8; border: 0; }
+        QTabWidget#editorTabs::tab-bar { top: 1px; }
         QTabWidget#editorTabs QScrollArea { background: #f5f6f8; }
-        QToolBar { background: #f5f6f8; border: 0; border-bottom: 1px solid #d6d8dc; spacing: 4px; padding: 0px 4px; }
+        QToolBar { background: #f5f6f8; border: 0; spacing: 4px; padding: 0px 4px; }
         QToolBar::separator { background: #dee2e6; width: 1px; margin: 8px 2px; }
         QToolButton { padding: 6px; border-radius: 4px; border: 1px solid transparent; }
         /* 6 px padding + 1 px border = 7 px around the 20 px icon. */
