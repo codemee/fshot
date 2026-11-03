@@ -347,9 +347,28 @@ class EditorWindow(QMainWindow):
         workspace = QWidget()
         workspace.setObjectName("editorWorkspace")
         workspace_layout = QVBoxLayout(workspace)
-        workspace_layout.setContentsMargins(12, 0, 12, 12)
+        workspace_layout.setContentsMargins(12, 0, 12, 0)
         workspace_layout.addWidget(self.workspace)
         self.setCentralWidget(workspace)
+        self.image_size_label = QLabel()
+        self.image_size_label.setObjectName("imageSizeStatus")
+        self.image_size_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        self.statusBar().setSizeGripEnabled(False)
+        # QStatusBar adds 2 px before its first item; align content to the
+        # workspace's 12 px edges, including future items at the right.
+        self.statusBar().setContentsMargins(10, 0, 12, 0)
+        self.statusBar().setFixedHeight(28)
+        status_info = QWidget()
+        status_info.setObjectName("imageSizeStatusGroup")
+        status_layout = QHBoxLayout(status_info)
+        status_layout.setContentsMargins(0, 0, 0, 0)
+        status_layout.setSpacing(6)
+        status_layout.addWidget(self.image_size_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        separator = QWidget()
+        separator.setObjectName("statusSeparator")
+        separator.setFixedSize(1, 12)
+        status_layout.addWidget(separator, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.statusBar().addWidget(status_info)
         self._build_tab_shortcuts()
         self._build_toolbar()
         self._build_about_menu()
@@ -1813,6 +1832,7 @@ class EditorWindow(QMainWindow):
         self.setWindowTitle(f"{app_title} - {doc.title}" if doc else app_title)
 
     def _update_actions(self) -> None:
+        self._update_image_status()
         has_doc = self._current_doc() is not None
         doc = self._current_doc()
         canvas = self._current_canvas()
@@ -1850,6 +1870,15 @@ class EditorWindow(QMainWindow):
 
     def _has_dirty_documents(self) -> bool:
         return any(doc.is_dirty for doc in self._all_documents())
+
+    def _update_image_status(self) -> None:
+        canvas = self._current_canvas()
+        if canvas is None:
+            text = self._tr("image_size_empty")
+        else:
+            text = self._tr("image_size", width=canvas.image.width(), height=canvas.image.height())
+        self.image_size_label.setText(text)
+        self.image_size_label.setAccessibleName(text)
 
     def _style_icon(self) -> QIcon:
         return tool_icon("style", self.settings.color, self.settings.line_width, dark=self._is_dark_theme())
@@ -1898,6 +1927,7 @@ class EditorWindow(QMainWindow):
         return self._tr("tooltip_shortcut", label=label, shortcut=" / ".join(shortcuts))
 
     def _retranslate_ui(self) -> None:
+        self._update_image_status()
         labels = (
             (self.pen_action, "pen"),
             (self.line_action, "line"),

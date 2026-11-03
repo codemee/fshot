@@ -124,6 +124,8 @@ def _stylesheet(mode: ThemeMode) -> str:
         return Template("""
             QMainWindow, QDialog { background: $window; }
             QWidget#editorWorkspace { background: $window; }
+            QStatusBar::item { border: 0; }
+            QWidget#statusSeparator { background: $border; }
             QTabWidget#editorTabs { background: transparent; }
             QTabWidget#editorTabs[activePane="true"] { border-color: $accent; }
             QTabWidget#editorTabs { border: 1px solid $raised; border-radius: 6px; padding: 1px; }
@@ -262,6 +264,8 @@ def _stylesheet(mode: ThemeMode) -> str:
     return """
         QMainWindow { background: #f5f6f8; }
         QWidget#editorWorkspace { background: #f5f6f8; }
+        QStatusBar::item { border: 0; }
+        QWidget#statusSeparator { background: #ced4da; }
         QTabWidget#editorTabs { background: transparent; }
         QTabWidget#editorTabs[activePane="true"] { border-color: #1971c2; }
         QTabWidget#editorTabs { border: 1px solid #d6d8dc; border-radius: 6px; padding: 1px; }

@@ -119,6 +119,8 @@ On macOS, closing and numbered selection use <kbd>⌘</kbd>; previous/next use Q
 
 Before closing tabs, closing the editor, quitting, or updating, unsaved screenshots can be saved, discarded, or kept by cancelling. Save all processes each document separately; cancelling a save or encountering a write error preserves the tabs and stops the close/update. Closing the editor leaves FShot in the system tray.
 
+The left side of the status bar shows the active image dimensions in pixels (width × height). It updates when switching tabs or panes, cropping, rotating, downscaling, or undoing. Display zoom does not change these dimensions.
+
 ## Split panes
 
 Drag a tab to the left, right, or bottom edge of any pane's content area. A placement preview shows where the new pane will appear. Split existing panes again to create nested layouts, and drag the dividers to adjust their width and height ratios.

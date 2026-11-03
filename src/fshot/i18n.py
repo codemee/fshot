@@ -16,6 +16,8 @@ class LanguageMode(str, Enum):
 
 TRANSLATIONS = {
     "en": {
+        "image_size": "Image size: {width} × {height} px",
+        "image_size_empty": "No image",
         "about_fshot": "About FShot…",
         "help_menu": "Help",
         "about_details": "FShot {version}\nCross-platform screenshot and image annotation tool.\n\nLicense: GNU General Public License v3.0 or later (GPL-3.0-or-later).\nThird-party components retain their respective licenses.\n\nProject and source code:\nhttps://github.com/codemee/fshot\n\nFull license:\nhttps://www.gnu.org/licenses/gpl-3.0.html",
@@ -191,6 +193,8 @@ TRANSLATIONS = {
         "tooltip_shortcut": "{label} ({shortcut})",
     },
     "zh_TW": {
+        "image_size": "圖片尺寸：{width} × {height} 像素",
+        "image_size_empty": "沒有圖片",
         "about_fshot": "關於 FShot…",
         "help_menu": "說明",
         "about_details": "FShot {version}\n跨平台截圖與圖片標註工具。\n\n授權：GNU General Public License 第三版或更新版本（GPL-3.0-or-later）。\n第三方元件維持各自的授權。\n\n專案與原始碼：\nhttps://github.com/codemee/fshot\n\n完整授權條款：\nhttps://www.gnu.org/licenses/gpl-3.0.html",
