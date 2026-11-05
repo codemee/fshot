@@ -25,6 +25,7 @@ _TOOL_BOUNDS = {
     "line": (5.25, 6, 13.5, 12),
     "arrow": (5.25, 6, 12.75, 12.75),
     "rectangle": (5.25, 6, 13.5, 12),
+    "ellipse": (5.25, 6, 13.5, 12),
     "measure": (4.5, 3.75, 15.75, 15.75),
     "text": (6, 6, 12, 12.75),
     "mosaic": (5.25, 6, 14.25, 14.25),
@@ -204,6 +205,8 @@ def _draw_tool_icon(
         painter.drawLine(5.25, 18.75, 11.25, 17.25)
     elif name == "rectangle":
         painter.drawRoundedRect(5.25, 6, 13.5, 12, 1.5, 1.5)
+    elif name == "ellipse":
+        painter.drawEllipse(5.25, 6, 13.5, 12)
     elif name == "measure":
         painter.setPen(
             QPen(

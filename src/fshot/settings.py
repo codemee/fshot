@@ -22,6 +22,11 @@ class Tool(str, Enum):
     MOSAIC = "mosaic"
 
 
+class ShapeStyle(str, Enum):
+    RECTANGLE = "rectangle"
+    ELLIPSE = "ellipse"
+
+
 class LineEndStyle(str, Enum):
     NONE = "none"
     ARROW = "arrow"
@@ -39,6 +44,7 @@ class CaptureSettings:
 class DrawingSettings:
     color: QColor
     line_width: int = 3
+    shape_style: ShapeStyle = ShapeStyle.RECTANGLE
     line_start_style: LineEndStyle = LineEndStyle.CIRCLE
     line_end_style: LineEndStyle = LineEndStyle.ARROW
     font_family: str = "Segoe UI"

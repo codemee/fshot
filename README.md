@@ -67,7 +67,7 @@ uv tool upgrade fshot
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/pen.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/pen.png"><img src="docs/images/toolbar/pen.png" width="28" height="28" alt="自由畫筆"></picture> | 自由畫筆 | 在圖片上拖曳繪製自由線條。<kbd>Alt</kbd>+<kbd>P</kbd> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/line.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/line.png"><img src="docs/images/toolbar/line.png" width="28" height="28" alt="線條"></picture> | 線條／箭頭 | 拖曳繪製直線，預設以實心圓起始、箭頭結束。<kbd>Alt</kbd>+<kbd>L</kbd> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/line_dropdown.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/line_dropdown.png"><img src="docs/images/toolbar/line_dropdown.png" width="28" height="28" alt="線條樣式下拉"></picture> | 線條端點樣式 | 點擊線條按鈕右側的小箭頭，直接選取無、箭頭與實心圓的九種線條預覽；滑鼠停留時顯示起點／終點樣式提示。 |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/rectangle.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/rectangle.png"><img src="docs/images/toolbar/rectangle.png" width="28" height="28" alt="矩形"></picture> | 矩形 | 拖曳繪製矩形框。<kbd>Alt</kbd>+<kbd>R</kbd> |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/rectangle.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/rectangle.png"><img src="docs/images/toolbar/rectangle.png" width="28" height="28" alt="矩形"></picture> | 矩形／橢圓形 | 由右側下拉選單選擇形狀，拖曳繪製；按住 Shift 畫正方形／正圓形。<kbd>Alt</kbd>+<kbd>R</kbd> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/measure.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/measure.png"><img src="docs/images/toolbar/measure.png" width="28" height="28" alt="丈量像素"></picture> | 丈量像素 | 拖曳顯示橫向、縱向像素差；放開保留讀值，重新丈量或切換工具時清除。讀值不寫入圖片。<kbd>Alt</kbd>+<kbd>D</kbd> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/text.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/text.png"><img src="docs/images/toolbar/text.png" width="28" height="28" alt="文字"></picture> | 文字 | 在圖片上加入文字。<kbd>Alt</kbd>+<kbd>T</kbd> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/toolbar/dark/mosaic.png"><source media="(prefers-color-scheme: light)" srcset="docs/images/toolbar/mosaic.png"><img src="docs/images/toolbar/mosaic.png" width="28" height="28" alt="馬賽克"></picture> | 馬賽克 | 拖曳選取範圍，以馬賽克遮蔽內容。<kbd>Alt</kbd>+<kbd>M</kbd> |
@@ -115,7 +115,7 @@ macOS 使用相同的 <kbd>Ctrl</kbd>+<kbd>Shift</kbd> 字母組合。獨立 App
 
 - <kbd>Alt</kbd>+<kbd>P</kbd>: 自由畫筆
 - <kbd>Alt</kbd>+<kbd>L</kbd>: 線條
-- <kbd>Alt</kbd>+<kbd>R</kbd>: 矩形
+- <kbd>Alt</kbd>+<kbd>R</kbd>: 矩形／橢圓形
 - <kbd>Alt</kbd>+<kbd>D</kbd>: 丈量像素
 - <kbd>Alt</kbd>+<kbd>T</kbd>: 文字
 - <kbd>Alt</kbd>+<kbd>M</kbd>: 馬賽克
@@ -147,6 +147,8 @@ macOS 的關閉與數字選頁使用 <kbd>⌘</kbd> 組合鍵，上一頁／下�
 關閉頁籤、編輯視窗或結束程式前，若有未儲存變更，會提供「儲存／儲存全部」「不儲存」「取消」。取消存檔或儲存失敗時會保留頁籤，不繼續關閉或更新。關閉編輯視窗後，FShot 仍會留在系統匣。
 
 視窗底部狀態列左側會顯示作用中標籤圖片的實際像素尺寸（寬 × 高），切換窗格或標籤、裁切、旋轉、縮小及復原時會同步更新；顯示縮放不影響此尺寸。
+
+畫線時按住 <kbd>Shift</kbd>，會依拖曳方向固定為水平或垂直。矩形工具右側下拉選單可切換矩形與橢圓形；按住 <kbd>Shift</kbd> 時分別繪製正方形與正圓形。拖曳途中按下或放開 Shift，預覽會即時更新。
 
 ## 分割窗格
 

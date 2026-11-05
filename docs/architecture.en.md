@@ -91,3 +91,5 @@ A mouse-transparent PaneFrame overlay paints a rounded outer frame for each Edit
 The imageSizeStatus label in the status bar reads pixel dimensions from the active Canvas QImage. Action-state and language refreshes update it; no document displays an empty-state message.
 
 The 28 px status bar arranges information from left to right and centers it vertically. A 12 px separator follows the text with a 6 px gap. Content aligns with the workspace 12 px side edges; zero workspace bottom margin places it directly below the rounded frame. The native size grip and item frame are disabled to avoid additional long rules.
+
+The shape tool shares Tool.RECTANGLE and selects rectangles or ellipses through DrawingSettings.shape_style. Its menu, toolbar icon, and overflow submenu stay synchronized. Canvas applies Shift constraints in image coordinates: dominant-axis horizontal/vertical lines, or equal-side shapes contained within image bounds. The raw pointer position is retained so Shift press/release updates the preview immediately; mouse release applies the same geometry rules.

@@ -121,6 +121,8 @@ Before closing tabs, closing the editor, quitting, or updating, unsaved screensh
 
 The left side of the status bar shows the active image dimensions in pixels (width × height). It updates when switching tabs or panes, cropping, rotating, downscaling, or undoing. Display zoom does not change these dimensions.
 
+Hold <kbd>Shift</kbd> while drawing a line to constrain it horizontally or vertically. The dropdown beside the rectangle tool selects a rectangle or ellipse; hold <kbd>Shift</kbd> to draw a square or circle. Pressing or releasing Shift during a drag updates the preview immediately.
+
 ## Split panes
 
 Drag a tab to the left, right, or bottom edge of any pane's content area. A placement preview shows where the new pane will appear. Split existing panes again to create nested layouts, and drag the dividers to adjust their width and height ratios.

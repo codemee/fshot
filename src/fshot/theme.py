@@ -173,7 +173,7 @@ def _stylesheet(mode: ThemeMode) -> str:
             }
             QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
             QMenu { background: $panel; border: 1px solid $hover; }
-            QMenu#toolbarOverflowMenu { padding: 4px 8px; }
+            QMenu#toolbarOverflowMenu, QMenu#shapeMenu { padding: 4px 8px; }
             QMenu::item { padding: 6px 18px; }
             QMenu::item:selected { background: $hover; color: $accent; }
             QMenu QWidget { color: $text; }
@@ -314,7 +314,7 @@ def _stylesheet(mode: ThemeMode) -> str:
         }
         QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
         QMenu { background: #ffffff; border: 1px solid #ced4da; }
-        QMenu#toolbarOverflowMenu { padding: 4px 8px; }
+        QMenu#toolbarOverflowMenu, QMenu#shapeMenu { padding: 4px 8px; }
         QMenu::item { padding: 6px 18px; }
         QMenu::item:selected { background: #e7f5ff; }
         QMenu QWidget { color: #343a40; }

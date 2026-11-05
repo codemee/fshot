@@ -17,7 +17,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QInputDialog, QSizePolicy, QWidget
 
-from fshot.settings import DrawingSettings, LineEndStyle, Tool
+from fshot.settings import DrawingSettings, LineEndStyle, ShapeStyle, Tool
 
 CANVAS_PADDING = 14
 HANDLE_SIZE = 8
@@ -36,6 +36,8 @@ class ImageCanvas(QWidget):
         self._start: QPoint | None = None
         self._last: QPoint | None = None
         self._preview: QPoint | None = None
+        self._raw_preview: QPoint | None = None
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._crop_rect = QRect(0, 0, self.image.width(), self.image.height())
         self._crop_handle: str | None = None
         self._crop_start_rect: QRect | None = None
@@ -158,7 +160,7 @@ class ImageCanvas(QWidget):
                 pen.setCapStyle(Qt.PenCapStyle.RoundCap)
                 pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
                 painter.setPen(pen)
-                painter.drawRect(rect)
+                self._draw_shape(painter, rect)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() != Qt.MouseButton.LeftButton:
@@ -176,7 +178,9 @@ class ImageCanvas(QWidget):
             return
         if self.tool is not Tool.MEASURE:
             self._push_undo()
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
         self._start = point
+        self._raw_preview = point
         self._last = point
         self._preview = point
 
@@ -185,7 +189,7 @@ class ImageCanvas(QWidget):
             self._drag_crop_handle(event.position().toPoint())
             self.update()
             return
-        handle = self._crop_handle_at(event.position().toPoint())
+        handle = self._crop_handle_at(event.position().toPoint()) if self._start is None else None
         if handle:
             self.setCursor(self._cursor_for_crop_handle(handle))
             return
@@ -201,7 +205,8 @@ class ImageCanvas(QWidget):
             painter.drawLine(self._last, point)
             self._last = point
             self.changed.emit()
-        self._preview = point
+        self._raw_preview = point
+        self._preview = self._constrained_point(point, bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier))
         self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
@@ -214,7 +219,9 @@ class ImageCanvas(QWidget):
             return
         if event.button() != Qt.MouseButton.LeftButton or self._start is None:
             return
-        end = self._clamp(self._to_image(event.position().toPoint()))
+        end = self._constrained_point(
+            self._clamp(self._to_image(event.position().toPoint())),
+            bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier))
         if self.tool == Tool.LINE:
             painter = QPainter(self.image)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -225,7 +232,7 @@ class ImageCanvas(QWidget):
             painter = QPainter(self.image)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             painter.setPen(self._pen())
-            painter.drawRect(QRect(self._start, end).normalized())
+            self._draw_shape(painter, QRect(self._start, end).normalized())
             self.changed.emit()
         elif self.tool == Tool.MOSAIC:
             self._apply_mosaic(QRect(self._start, end).normalized())
@@ -239,6 +246,43 @@ class ImageCanvas(QWidget):
         self._last = None
         self._preview = None
         self.update()
+
+    def _draw_shape(self, painter: QPainter, rect: QRect) -> None:
+        if self.settings.shape_style is ShapeStyle.ELLIPSE:
+            painter.drawEllipse(rect)
+        else:
+            painter.drawRect(rect)
+
+    def _constrained_point(self, point: QPoint, shift: bool) -> QPoint:
+        if not shift or self._start is None:
+            return point
+        dx, dy = point.x() - self._start.x(), point.y() - self._start.y()
+        if self.tool is Tool.LINE:
+            return QPoint(point.x(), self._start.y()) if abs(dx) >= abs(dy) else QPoint(self._start.x(), point.y())
+        if self.tool is Tool.RECTANGLE:
+            sx, sy = (-1 if dx < 0 else 1), (-1 if dy < 0 else 1)
+            room_x = self._start.x() if sx < 0 else self.image.width() - 1 - self._start.x()
+            room_y = self._start.y() if sy < 0 else self.image.height() - 1 - self._start.y()
+            size = min(max(abs(dx), abs(dy)), room_x, room_y)
+            return self._start + QPoint(sx * size, sy * size)
+        return point
+
+    def _shift_preview(self, pressed: bool) -> None:
+        if self._start is not None and self._raw_preview is not None:
+            self._preview = self._constrained_point(self._raw_preview, pressed)
+            self.update()
+
+    def keyPressEvent(self, event) -> None:
+        if event.key() == Qt.Key.Key_Shift:
+            self._shift_preview(True)
+        else:
+            super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event) -> None:
+        if event.key() == Qt.Key.Key_Shift:
+            self._shift_preview(False)
+        else:
+            super().keyReleaseEvent(event)
 
     def _place_text(self, point: QPoint) -> None:
         text, ok = QInputDialog.getText(self, "Text", "Text")

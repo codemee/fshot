@@ -63,7 +63,7 @@ from fshot.icons import camera_icon, line_combination_icon, tool_icon
 from fshot.hotkeys import HOTKEY_ACTIONS, HotkeyAction, HotkeyCombination, default_hotkeys
 from fshot.i18n import LanguageManager, LanguageMode
 from fshot.qt_image import pil_to_qimage
-from fshot.settings import CaptureMode, CaptureSettings, DrawingSettings, LineEndStyle, Tool
+from fshot.settings import CaptureMode, CaptureSettings, DrawingSettings, LineEndStyle, ShapeStyle, Tool
 from fshot.theme import ThemeManager, ThemeMode
 
 if sys.platform == "win32":
@@ -915,6 +915,37 @@ class EditorWindow(QMainWindow):
                 line_tool_layout.addWidget(self.line_end_button)
                 toolbar.addWidget(self.line_tool_group)
                 self.line_action.toggled.connect(self._sync_line_tool_group)
+            elif action is self.rect_action:
+                self.shape_menu = QMenu(self)
+                self.shape_menu.setObjectName("shapeMenu")
+                group = QActionGroup(self.shape_menu)
+                self.shape_actions = {}
+                for shape in ShapeStyle:
+                    option = QAction(self.shape_menu)
+                    option.setCheckable(True)
+                    group.addAction(option)
+                    self.shape_menu.addAction(option)
+                    option.triggered.connect(lambda checked=False, shape=shape: self._set_shape_style(shape))
+                    self.shape_actions[shape] = option
+                self.shape_tool_group = QWidget()
+                layout = QHBoxLayout(self.shape_tool_group)
+                layout.setContentsMargins(0, 0, 0, 0)
+                layout.setSpacing(0)
+                self.shape_button = QToolButton()
+                self.shape_button.setProperty("lineToolMain", True)
+                self.shape_button.setDefaultAction(self.rect_action)
+                self.shape_dropdown = QToolButton()
+                self.shape_dropdown.setProperty("lineToolDropdown", True)
+                self.shape_dropdown.setArrowType(Qt.ArrowType.DownArrow)
+                self.shape_dropdown.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+                self.shape_dropdown.setMenu(self.shape_menu)
+                self.shape_button.setFixedSize(TOOLBAR_BUTTON_SIZE)
+                self.shape_dropdown.setFixedSize(TOOLBAR_DROPDOWN_SIZE)
+                layout.addWidget(self.shape_button)
+                layout.addWidget(self.shape_dropdown)
+                self.shape_tool_group.setFixedSize(TOOLBAR_BUTTON_SIZE.width() + TOOLBAR_DROPDOWN_SIZE.width(), TOOLBAR_BUTTON_SIZE.height())
+                toolbar.addWidget(self.shape_tool_group)
+                self.rect_action.toggled.connect(self._sync_shape_group)
             else:
                 toolbar.addAction(action)
         self.pen_action.setChecked(True)
@@ -1074,6 +1105,10 @@ class EditorWindow(QMainWindow):
                 menu.addAction(self.line_action)
                 self.line_end_menu.setTitle(self.line_end_button.toolTip())
                 menu.addMenu(self.line_end_menu)
+            elif widget is self.shape_tool_group:
+                menu.addAction(self.rect_action)
+                self.shape_menu.setTitle(self._tr("shape_settings"))
+                menu.addMenu(self.shape_menu)
             else:
                 menu.addAction(action)
 
@@ -1083,6 +1118,28 @@ class EditorWindow(QMainWindow):
         action.setShortcut(shortcut)
         action.triggered.connect(lambda: self.set_active_tool(tool))
         return action
+
+    def _set_shape_style(self, shape: ShapeStyle) -> None:
+        self.settings.shape_style = shape
+        self.rect_action.setChecked(True)
+        self.set_active_tool(Tool.RECTANGLE)
+        self._refresh_shape_menu()
+
+    def _sync_shape_group(self, checked: bool) -> None:
+        self.shape_dropdown.setProperty("lineSelected", checked)
+        self.shape_dropdown.style().unpolish(self.shape_dropdown)
+        self.shape_dropdown.style().polish(self.shape_dropdown)
+
+    def _refresh_shape_menu(self) -> None:
+        for shape, action in self.shape_actions.items():
+            action.setText(self._tr(shape.value))
+            action.setIcon(tool_icon(shape.value, dark=self._is_dark_theme()))
+            action.setChecked(self.settings.shape_style is shape)
+        label = self._tr(self.settings.shape_style.value)
+        self.rect_action.setText(label)
+        self.rect_action.setToolTip(self._tooltip_with_shortcuts(label, self.rect_action))
+        self.rect_action.setIcon(tool_icon(self.settings.shape_style.value, dark=self._is_dark_theme()))
+        self.shape_dropdown.setToolTip(self._tr("shape_settings"))
 
     def _create_line_end_menu(self) -> QMenu:
         menu = QMenu(self)
@@ -1846,6 +1903,7 @@ class EditorWindow(QMainWindow):
         ]:
             action.setEnabled(has_doc)
         self.line_end_button.setEnabled(has_doc)
+        self.shape_dropdown.setEnabled(has_doc)
         self.style_action.setEnabled(has_doc)
         self.rotate_action.setEnabled(has_doc)
         self.flip_horizontal_action.setEnabled(has_doc)
@@ -1964,12 +2022,14 @@ class EditorWindow(QMainWindow):
             label = self._tr("last_tab") if number == 9 else self._tr("select_tab", number=number)
             action.setText(label)
             action.setToolTip(self._tooltip_with_shortcuts(label, action))
+        self.line_action.setToolTip(self._tooltip_with_shortcuts(self._tr("line"), self.line_action) + "\n" + self._tr("line_shift_hint"))
         self.line_end_button.setToolTip(self._tr("line_end_settings"))
         self._update_system_menu()
         self.about_action.setText(self._tr("about_fshot"))
         if self.application_menu_bar is not None:
             self.about_menu.setTitle(self._tr("help_menu"))
         self._refresh_line_end_panel()
+        self._refresh_shape_menu()
         for pane in self.workspace.panes:
             pane.menu_button.setToolTip(self._tr("open_tabs"))
         self.cursor_action.setText(self._tr("include_cursor"))
@@ -2020,6 +2080,7 @@ class EditorWindow(QMainWindow):
             (self.hotkey_action, "keyboard"),
         ):
             action.setIcon(tool_icon(name, dark=dark))
+        self._refresh_shape_menu()
         self.line_action.setIcon(self._line_icon())
         self.style_action.setIcon(self._style_icon())
         self.cursor_action.setIcon(tool_icon("cursor", checked=self.capture_settings.include_cursor, dark=dark))
