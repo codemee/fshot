@@ -27,6 +27,7 @@ from uv_tool_updater import (
     Updater,
 )
 
+from fshot.startup_trace import mark as mark_startup
 from fshot.dialogs import MessageDialog
 from fshot.capture import CaptureService
 from fshot.virtual_screen import VirtualCaptureSession
@@ -209,6 +210,10 @@ class FShotApplication(QObject):
 
     def run(self) -> int:
         self.tray.show()
+        mark_startup("tray_ready")
+        QTimer.singleShot(0, lambda: mark_startup("event_loop_ready"))
+        if "--startup-probe" in sys.argv:
+            QTimer.singleShot(100, self._shutdown)
         self.window.hide()
         if not self.packaged:
             QTimer.singleShot(0, self._show_pending_update_result)
@@ -229,6 +234,7 @@ class FShotApplication(QObject):
 
     def show_window(self) -> None:
         _activate_window(self.window)
+        mark_startup("editor_visible")
 
     def quit(self) -> None:
         if self.window.confirm_discard_all("quit_unsaved"):
@@ -358,6 +364,7 @@ class FShotApplication(QObject):
                 return
             self.window.add_shot(image)
             self.show_window()
+            mark_startup("first_capture_ready")
             # Selection completion can post a delayed activation restore after
             # SetForegroundWindow initially succeeds. Reassert the editor once
             # that input transaction has fully settled.
@@ -755,7 +762,7 @@ class FShotApplication(QObject):
         self._hotkey_handles.clear()
 
 
-def main() -> int:
+def main(*, instance=None) -> int:
     if "--version" in sys.argv:
         from fshot import __version__
 
@@ -769,5 +776,16 @@ def main() -> int:
         except (OSError, RuntimeError):
             pass
     app = QApplication(sys.argv)
+    mark_startup("application_created")
     controller = FShotApplication(app)
+    mark_startup("controller_ready")
+    if instance is not None:
+        def activate_existing() -> None:
+            if instance.activation_pending():
+                controller.show_window()
+
+        activation_timer = QTimer(app)
+        activation_timer.setInterval(100)
+        activation_timer.timeout.connect(activate_existing)
+        activation_timer.start()
     return controller.run()

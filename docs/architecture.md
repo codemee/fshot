@@ -26,9 +26,9 @@
   - Frozen EXE／App 改查 GitHub 最新 Release；發現新版時只開啟下載頁面，不自動覆寫未簽章應用程式。
 
 - `packaging/fshot.spec`、`scripts/build_app.py`
-  - 使用 PyInstaller 產生 Windows x64 單一 EXE，以及 Apple Silicon macOS App。
+  - 使用 PyInstaller 產生 Windows x64 onedir 資料夾（以 ZIP 散布），以及 Apple Silicon macOS App。
   - macOS App 會放入含 Applications 捷徑的 arm64 DMG；Windows 版本資訊、ICO 與 macOS ICNS 在建置時由程式 metadata 及現有相機圖示產生。
-  - GitHub Release 發布後，由 `package-apps.yml` 自動在原生 runner 建置、驗證並附加 EXE、DMG 與 SHA-256；不支援 Intel Mac。
+  - GitHub Release 發布後，由 `package-apps.yml` 自動在原生 runner 建置、驗證並附加 ZIP、DMG 與 SHA-256；不支援 Intel Mac。
 
 - `capture.py`
   - Windows 全螢幕模式只擷取原生游標所在的單一螢幕；工具列實體／虛擬切換不影響此模式。完整虛擬桌面範圍仍供凍結快照、跨螢幕選取與擷取邊界裁切使用。
@@ -198,3 +198,5 @@ EditorWindow 的工具列操作指向作用中窗格；各窗格的信號先定�
 狀態列高 28px，資訊由左至右排列並垂直置中，文字後以 6px 間距接 12px 高的短分隔線。內容左右邊界與窗格外框的 12px 邊距對齊；工作區底部 margin 為 0，狀態列直接接在圓角框下緣。停用原生 size grip 與 item 外框，避免額外長分隔線。
 
 形狀工具共用 Tool.RECTANGLE，以 DrawingSettings.shape_style 選擇矩形或橢圓；選單、工具列圖示與溢位子選單同步。Canvas 在原圖座標套用 Shift 限制：線條選取水平／垂直主軸，形狀使用相同寬高並限制在圖片範圍。保留未限制的滑鼠位置，使拖曳途中按下／放開 Shift 可以立即更新預覽，放開滑鼠時使用相同幾何規則繪製。
+
+Windows 啟動效能第一階段：以 onedir／ZIP 取代正式單檔 EXE。`entrypoint.py` 在 Qt 前分派版本／自我檢查，`startup_trace.py` 提供選用 JSONL 節點追蹤，`scripts/benchmark_startup.py` 交錯量測已封裝成品。細節與本機數據見 [啟動效能](startup-performance.md)。

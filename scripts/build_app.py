@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import argparse
 import os
 import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 
@@ -109,9 +111,20 @@ def build_macos_dmg(version: str) -> Path:
     return output
 
 
+def package_windows_directory(version: str) -> Path:
+    shutil.copy2(ROOT / "LICENSE", DIST / "FShot" / "LICENSE")
+    return Path(shutil.make_archive(str(DIST / f"FShot-{version}-windows-x64"),
+                                   "zip", root_dir=DIST, base_dir="FShot"))
+
+
 def main() -> int:
     if sys.platform not in {"win32", "darwin"}:
         raise SystemExit("Desktop packaging currently supports Windows and macOS only")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--windows-layout", choices=("onedir", "onefile"), default="onedir",
+                        help="Onefile is retained only for startup comparisons")
+    args = parser.parse_args()
+    os.environ["FSHOT_WINDOWS_LAYOUT"] = args.windows_layout
     version = project_version()
     generate_icons()
     if sys.platform == "win32":
@@ -130,10 +143,16 @@ def main() -> int:
         check=True,
     )
     if sys.platform == "win32":
-        subprocess.run([str(DIST / "FShot.exe"), "--version"], check=True, timeout=60)
-        output = DIST / f"FShot-{version}-windows-x64.exe"
-        output.unlink(missing_ok=True)
-        (DIST / "FShot.exe").replace(output)
+        executable = DIST / "FShot" / "FShot.exe" if args.windows_layout == "onedir" else DIST / "FShot.exe"
+        with tempfile.TemporaryDirectory(prefix="fshot-package-cwd-") as cwd:
+            subprocess.run([str(executable), "--version"], cwd=cwd, check=True, timeout=60)
+            subprocess.run([str(executable), "--self-test"], cwd=cwd, check=True, timeout=120)
+        if args.windows_layout == "onedir":
+            output = package_windows_directory(version)
+        else:
+            output = DIST / f"FShot-{version}-windows-x64-onefile.exe"
+            output.unlink(missing_ok=True)
+            (DIST / "FShot.exe").replace(output)
     else:
         subprocess.run(
             [str(DIST / "FShot.app" / "Contents" / "MacOS" / "FShot"), "--version"],

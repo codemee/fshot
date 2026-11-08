@@ -18,7 +18,7 @@ Use **Start at login** in the tray menu to enable or disable automatic startup a
 
 For regular use, download a build from [GitHub Releases](https://github.com/codemee/fshot/releases):
 
-- Windows 10/11 x64: a portable `FShot-<version>-windows-x64.exe` that does not require Python.
+- Windows 10/11 x64: a portable `FShot-<version>-windows-x64.zip`; extract the entire folder and run `FShot.exe` inside it. Python is not required.
 - Apple Silicon Mac: `FShot-<version>-macos-arm64.dmg`; open it and drag `FShot.app` to Applications. Intel Macs are not supported.
 
 Windows may show a SmartScreen prompt on first launch. On macOS, you may need **Open Anyway** under System Settings → Privacy & Security, followed by Screen Recording and Accessibility permissions. See the [Windows installation guide](docs/install-windows.en.md) or [macOS installation guide](docs/install-macos.en.md) for setup, permissions, and download verification.

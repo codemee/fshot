@@ -18,7 +18,7 @@ FShot 是桌面截圖工具，提供全域快捷鍵、系統匣常駐、多頁�
 
 一般使用者建議從 [GitHub Releases](https://github.com/codemee/fshot/releases) 下載：
 
-- Windows 10/11 x64：單一可攜式 `FShot-<版本>-windows-x64.exe`，不需要 Python。
+- Windows 10/11 x64：可攜式資料夾包 `FShot-<版本>-windows-x64.zip`，完整解壓後執行資料夾內的 `FShot.exe`，不需要 Python。
 - Apple Silicon Mac：`FShot-<版本>-macos-arm64.dmg`，開啟後將 `FShot.app` 拖入 Applications；不支援 Intel Mac。
 
 首次開啟時，Windows 可能顯示 SmartScreen 提示；macOS 可能需要在「系統設定 → 隱私權與安全性」選擇「仍要打開」，並授予「螢幕錄製」與「輔助使用」權限。安裝步驟、權限設定與檔案校驗方式，請閱讀 [Windows 安裝說明](docs/install-windows.md) 或 [macOS 安裝說明](docs/install-macos.md)。

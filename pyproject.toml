@@ -1,6 +1,6 @@
 [project]
 name = "fshot"
-version = "0.1.12"
+version = "0.1.13"
 description = "Keyboard-first cross-platform screenshot utility"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.scripts]
-fshot = "fshot.app:main"
+fshot = "fshot.entrypoint:main"
 
 [project.urls]
 Homepage = "https://github.com/codemee/fshot"

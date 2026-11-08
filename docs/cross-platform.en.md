@@ -69,7 +69,7 @@ Linux is not currently a primary target. X11 and Wayland differ substantially in
 
 ## Packaged Applications
 
-- Releases provide a single Windows x64 EXE and an Apple Silicon arm64 DMG only. Intel Macs are not supported.
+- Releases provide a Windows x64 folder ZIP and an Apple Silicon arm64 DMG only. Intel Macs are not supported.
 - Neither platform receives a trusted publisher signature. Windows can show SmartScreen, while macOS requires a Gatekeeper Open Anyway approval; see the platform installation guides.
 - The macOS DMG contains `FShot.app` and an Applications shortcut. Without Developer ID signing or notarization, replacement builds can require another Gatekeeper approval and renewed Screen Recording or Accessibility permissions.
 
@@ -97,3 +97,5 @@ Linux is not currently a primary target. X11 and Wayland differ substantially in
 Start at login uses the current user Run registry value on Windows and `~/Library/LaunchAgents/io.github.codemee.fshot.plist` on macOS, taking effect at the next login. Verify enabling, disabling, checked state after restarting, paths containing spaces, and permission errors. macOS login startup requires device verification.
 
 Split panes use shared Qt QDrag/QSplitter APIs. On Windows and macOS, verify the drag threshold, left/right/bottom previews, center merging, moving between panes, drag cancellation, nested divider ratios, independent tab overflow lists, light/dark themes and DPI scaling, and unsaved confirmation across panes.
+
+Windows releases use an onedir ZIP; macOS retains App/DMG. Validate startup after full extraction, paths containing spaces, unrelated working directories, capture, and update links. Reconfigure Start at login and shortcuts after moving the folder. Distinguish application-reported startup readiness from OS painting completion.

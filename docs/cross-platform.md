@@ -104,7 +104,7 @@ Linux 尚未作為主要目標。Wayland/X11 差異很大，尤其是全域快�
 
 ## Packaged Applications
 
-- Windows 只發布 x64 單一 EXE；macOS 只發布 Apple Silicon arm64 DMG，不支援 Intel Mac。
+- Windows 只發布 x64 資料夾 ZIP；macOS 只發布 Apple Silicon arm64 DMG，不支援 Intel Mac。
 - 兩平台皆不套用可信任發行者簽章。Windows 可能顯示 SmartScreen，macOS 需要 Gatekeeper「仍要打開」，詳細流程見各平台安裝文件。
 - macOS DMG 內含 `FShot.app` 與 Applications 捷徑。因 App 沒有 Developer ID 簽章或 notarization，更新後可能需要重新確認 Gatekeeper、螢幕錄製與輔助使用權限。
 
@@ -134,3 +134,5 @@ Linux 尚未作為主要目標。Wayland/X11 差異很大，尤其是全域快�
 開機自動執行在 Windows 使用目前使用者的 Run 登錄值，在 macOS 使用 `~/Library/LaunchAgents/io.github.codemee.fshot.plist`，下次登入生效。手動驗收需確認啟用、取消、重新啟動後勾選狀態、路徑含空白與權限錯誤；macOS 尚需實機驗證登入後啟動。
 
 分割窗格使用共用 Qt QDrag／QSplitter，不涉及平台原生視窗。Windows 與 macOS 手動驗收：拖曳門檻、左／右／下預覽、中央合併、跨窗格移動、拖曳取消、巢狀分隔線比例、各窗格獨立標籤溢位清單、深淺色與不同 DPI，以及跨窗格未儲存確認。
+
+Windows 正式封裝以 onedir 資料夾 ZIP 散布；macOS 沿用 App／DMG。驗證完整解壓後的啟動、含空白路徑、不同工作目錄、截圖與更新連結；搬移後需重新設定開機自動執行與捷徑。啟動量測需區分程式回報就緒與作業系統實際繪製完成。

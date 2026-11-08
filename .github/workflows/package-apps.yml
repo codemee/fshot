@@ -28,7 +28,7 @@ jobs:
         include:
           - runner: windows-latest
             artifact: windows-x64
-            path: dist/FShot-*-windows-x64.exe
+            path: dist/FShot-*-windows-x64.zip
           - runner: macos-15
             artifact: macos-arm64
             path: dist/FShot-*-macos-arm64.dmg

@@ -6,7 +6,7 @@
 
 ## 建置方式
 
-FShot 使用 PyInstaller，必須在目標作業系統上建置。Windows runner 產生 x64 單一 EXE；Apple Silicon macOS runner 產生 arm64 DMG，內含 `FShot.app` 與 Applications 捷徑。不建立 Intel Mac 版本。
+FShot 使用 PyInstaller，必須在目標作業系統上建置。Windows runner 以 onedir 產生 x64 資料夾，並以 ZIP 散布；Apple Silicon macOS runner 產生 arm64 DMG，內含 `FShot.app` 與 Applications 捷徑。不建立 Intel Mac 版本。
 
 安裝後的 `fshot` 指令使用 console entry point（`project.scripts`），沿用啟動它的終端機；桌面打包版使用 PyInstaller 的 windowed launcher。
 
@@ -21,14 +21,14 @@ uv run python scripts/build_app.py
 
 輸出檔案：
 
-- Windows：`dist/FShot-<version>-windows-x64.exe`。
+- Windows：`dist/FShot-<version>-windows-x64.zip`。
 - macOS：`dist/FShot-<version>-macos-arm64.dmg`。
 
 產生的圖示與 Windows 版本資源位於 `build/package-assets`，不是原始碼檔案。PyInstaller spec 會帶入 FShot 的套件 metadata，供打包版的視窗標題與更新檢查讀取版本。
 
 ## GitHub Actions 與發布
 
-發布 GitHub Release 後，`Package desktop apps` 工作流程會在 Windows 與 macOS 原生 runner 執行測試及打包，將 EXE、DMG 與 `SHA256SUMS.txt` 附加到該 Release。
+發布 GitHub Release 後，`Package desktop apps` 工作流程會在 Windows 與 macOS 原生 runner 執行測試及打包，將 ZIP、DMG 與 `SHA256SUMS.txt` 附加到該 Release。
 
 工作流程也可手動執行：
 
@@ -37,3 +37,5 @@ uv run python scripts/build_app.py
 - **attach_to_release**：只有對應 Release 已存在時才啟用。
 
 打包流程不使用 Authenticode、Apple Developer ID 或 notarization 憑證，因此發行檔仍可能出現 SmartScreen／Gatekeeper 提示；處理方式見各平台安裝說明。
+
+Windows ZIP 內為 `FShot/FShot.exe`、`FShot/_internal/` 與 `FShot/LICENSE`；必須完整保留。建置時會從任意工作目錄驗證版本入口與 Qt GUI 自我檢查。單檔比較基準可用 `uv run python scripts/build_app.py --windows-layout onefile` 建置；不作為預設發行產物。啟動量測見 [啟動效能](startup-performance.md)。

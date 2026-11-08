@@ -54,6 +54,7 @@ from PySide6.QtWidgets import (
     QWidgetAction,
 )
 
+from fshot.startup_trace import mark as mark_startup
 from fshot.workspace import EditorPane, SplitWorkspace
 from fshot import __version__
 from fshot.dialogs import MessageDialog
@@ -561,6 +562,7 @@ class EditorWindow(QMainWindow):
         self.raise_()
         self.activateWindow()
         self._refresh_tabs()
+        mark_startup("first_document_ready")
 
     def dragEnterEvent(self, event) -> None:
         if self._image_paths_from_mime(event.mimeData()):

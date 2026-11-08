@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import sys
 import tomllib
 
@@ -34,9 +35,10 @@ if sys.platform == "win32":
     executable = EXE(
         pyz,
         analysis.scripts,
-        analysis.binaries,
-        analysis.datas,
+        analysis.binaries if os.environ.get("FSHOT_WINDOWS_LAYOUT") == "onefile" else [],
+        analysis.datas if os.environ.get("FSHOT_WINDOWS_LAYOUT") == "onefile" else [],
         [],
+        exclude_binaries=os.environ.get("FSHOT_WINDOWS_LAYOUT") != "onefile",
         name="FShot",
         debug=False,
         bootloader_ignore_signals=False,
@@ -46,6 +48,9 @@ if sys.platform == "win32":
         icon=str(GENERATED / "fshot.ico"),
         version=str(GENERATED / "windows-version.txt"),
     )
+    if os.environ.get("FSHOT_WINDOWS_LAYOUT") != "onefile":
+        collected = COLLECT(executable, analysis.binaries, analysis.datas,
+                            strip=False, upx=False, name="FShot")
 elif sys.platform == "darwin":
     executable = EXE(
         pyz,
