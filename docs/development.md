@@ -22,11 +22,12 @@ uv tool install --force "fshot @ git+https://github.com/codemee/fshot.git@main"
 ## 測試
 
 ```powershell
-uv run pytest -q
-uv run python -m compileall src tests
+uv run pytest -q tests/test_startup_packaging.py
 ```
 
-若 FShot 正在執行，Windows 可能因 executable 或 `__pycache__` 檔案被鎖而使環境更新或 `compileall` 失敗；先關閉 FShot 後再重跑。
+上例以打包修改為例，開發時選擇此次修改相關的測試；通過後重新開啟程式供手動驗證。發布前不必再固定執行整套測試或 `compileall`：Windows 與 macOS CI 各執行一次 `uv run pytest -q`。大型重構、影響範圍不明或除錯時，仍可在本機執行完整測試。
+
+只有調整啟動流程或打包方式時才執行啟動效能量測；一般發布不重跑基準測試。封裝後的版本與 GUI 自我檢查已由打包腳本執行，不需手動重複。
 
 ## 維護文件圖示
 

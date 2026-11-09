@@ -22,11 +22,12 @@ uv tool install --force "fshot @ git+https://github.com/codemee/fshot.git@main"
 ## Tests
 
 ```powershell
-uv run pytest -q
-uv run python -m compileall src tests
+uv run pytest -q tests/test_startup_packaging.py
 ```
 
-On Windows, a running FShot may lock an executable or `__pycache__` file and prevent environment updates or `compileall`. Stop FShot and rerun the command.
+This example targets packaging changes. Run tests relevant to the change locally, then reopen the app for manual verification. Windows and macOS CI each run the complete `uv run pytest -q` suite; a routine release does not require another local full-suite or `compileall` run. Full local testing remains useful for broad refactoring or debugging.
+
+Run startup benchmarks only when startup or packaging changes. The build script already performs packaged version and GUI checks; do not repeat them manually for every release.
 
 ## Documentation icons
 

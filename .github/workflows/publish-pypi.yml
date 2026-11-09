@@ -1,35 +1,99 @@
 name: Publish to PyPI
 
 on:
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: Git ref to build and publish
-        required: true
-        default: main
+  workflow_run:
+    workflows: [Package desktop apps]
+    types: [completed]
 
 permissions:
   contents: read
 
+concurrency:
+  group: publish-pypi
+  cancel-in-progress: false
+
 jobs:
-  publish:
+  source:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-
+      actions: read
+      contents: read
+    outputs:
+      ready: ${{ steps.artifact.outputs.ready }}
+      sha: ${{ steps.metadata.outputs.sha }}
+      tag: ${{ steps.metadata.outputs.tag }}
     steps:
-      - name: Check out release source
+      - name: Find verified release source
+        id: artifact
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const {data} = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner, repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id, per_page: 100
+            });
+            const source = data.artifacts.find(a => a.name === 'release-source' && !a.expired);
+            core.setOutput('ready', source ? 'true' : 'false');
+            if (!source) core.notice('Build-only run: no release was attached; skip PyPI.');
+
+      - name: Download verified release source
+        if: steps.artifact.outputs.ready == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: release-source
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: verified-source
+
+      - name: Read immutable source revision
+        if: steps.artifact.outputs.ready == 'true'
+        id: metadata
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const source = JSON.parse(fs.readFileSync('verified-source/release-source.json', 'utf8'));
+            if (!/^[0-9a-f]{40}$/.test(source.sha) || typeof source.tag !== 'string' || !source.tag) {
+              throw new Error('Invalid verified release metadata');
+            }
+            core.setOutput('sha', source.sha);
+            core.setOutput('tag', source.tag);
+
+  publish:
+    needs: source
+    if: needs.source.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out verified release source
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ needs.source.outputs.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
+      - name: Check release version
+        env:
+          RELEASE_TAG: ${{ needs.source.outputs.tag }}
+        run: |
+          python - <<'PY'
+          import os, tomllib
+          from pathlib import Path
+          version = tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+          if os.environ['RELEASE_TAG'] != f'v{version}':
+              raise SystemExit('Release tag does not match package version')
+          PY
+
       - name: Build distributions
         run: python -m pip install build && python -m build
 
       - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true

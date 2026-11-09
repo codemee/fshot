@@ -23,4 +23,8 @@ Publishing a GitHub Release automatically builds Windows x64 and macOS arm64 pac
 
 The workflow does not use Authenticode, Apple Developer ID, or notarization credentials. See the platform installation guides for the resulting SmartScreen and Gatekeeper experience.
 
+The source ref is resolved once to an immutable commit SHA for both platform builds. After both full test suites, packaging checks, and release attachment succeed, source metadata triggers **Publish to PyPI** via `workflow_run`. It checks the `v<version>` tag and publishes from the same SHA. Do not dispatch PyPI separately. Failed, cancelled, and build-only runs do not publish. Manual runs with **attach_to_release** enabled also continue to PyPI; use matching version tags for **ref** and **release_tag**. Reruns skip existing PyPI files. Merge workflow changes into the default branch before using this process for subsequent releases.
+
+Both Windows and macOS builds run `--version` and the Qt GUI `--self-test` from a temporary working directory before packaging. These checks use isolated settings and no global hotkeys; failures stop packaging. Local development uses relevant tests and manual verification rather than routinely repeating full CI suites.
+
 The Windows ZIP contains `FShot/FShot.exe`, `FShot/_internal/`, and `FShot/LICENSE`; retain the entire folder. The build checks the version entry and packaged Qt GUI. Use `uv run python scripts/build_app.py --windows-layout onefile` only to create an instrumented comparison baseline. See [startup measurements](startup-performance.en.md).

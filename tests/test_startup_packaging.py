@@ -4,6 +4,9 @@ from pathlib import Path
 import subprocess
 import sys
 import zipfile
+from types import SimpleNamespace
+
+import pytest
 
 from fshot import startup_trace
 
@@ -52,3 +55,37 @@ def test_windows_zip_preserves_complete_folder_and_license(monkeypatch, tmp_path
         assert bundle.read('FShot/FShot.exe') == b'launcher'
         assert bundle.read('FShot/_internal/Qt.dll') == b'dependency'
         assert bundle.read('FShot/LICENSE') == (module.ROOT / 'LICENSE').read_bytes()
+
+
+@pytest.mark.parametrize('gui_ok', [True, False])
+def test_macos_checks_packaged_gui_before_building_dmg(monkeypatch, tmp_path, gui_ok):
+    path = Path(__file__).resolve().parents[1] / 'scripts' / 'build_app.py'
+    spec = importlib.util.spec_from_file_location('fshot_macos_build', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, 'DIST', tmp_path)
+    monkeypatch.setattr(module, 'sys', SimpleNamespace(platform='darwin', executable=sys.executable, argv=['build_app.py']))
+    monkeypatch.setattr(sys, 'argv', ['build_app.py'])
+    monkeypatch.setattr(module, 'generate_icons', lambda: None)
+    calls = []
+    packaged = []
+
+    def run(command, **kwargs):
+        calls.append((command, kwargs))
+        if command[-1] == '--self-test' and not gui_ok:
+            raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(module.subprocess, 'run', run)
+    monkeypatch.setattr(module, 'build_macos_dmg', lambda version: packaged.append(version))
+    if gui_ok:
+        assert module.main() == 0
+        assert packaged == [module.project_version()]
+    else:
+        with pytest.raises(subprocess.CalledProcessError):
+            module.main()
+        assert not packaged
+    checks = calls[1:]
+    assert [command[-1] for command, _ in checks] == ['--version', '--self-test']
+    assert all(command[0] == str(tmp_path / 'FShot.app' / 'Contents' / 'MacOS' / 'FShot') for command, _ in checks)
+    assert checks[0][1]['cwd'] == checks[1][1]['cwd']
+    assert all(options['check'] is True for _, options in checks)

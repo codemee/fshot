@@ -179,7 +179,7 @@
 - `tests/test_main_window.py`: 工具列按鈕尺寸、標籤溢出箭頭的位置與捲動邊界、清單選頁、視窗縮放及圖片捲軸排除 Canvas padding 的幾何與補白元件。
 - `tests/test_version.py`: 執行時版本與已安裝套件 metadata 保持一致。
 - `tests/test_updates.py`: 自動檢查間隔、略過版本、背景執行與錯誤回報。
-- 以 `uv run pytest -q` 與 `uv run python -m compileall src tests` 執行跨平台檢查。
+- 本機執行修改相關測試與手動驗證；Windows／macOS CI 各以 `uv run pytest -q` 執行完整檢查，詳見 [開發指南](development.md)。
 
 重要的 GUI/OS 行為仍需手動驗收，尤其是全域快捷鍵、視窗選取、游標擷取與剪貼簿。
 

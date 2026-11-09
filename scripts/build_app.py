@@ -154,11 +154,10 @@ def main() -> int:
             output.unlink(missing_ok=True)
             (DIST / "FShot.exe").replace(output)
     else:
-        subprocess.run(
-            [str(DIST / "FShot.app" / "Contents" / "MacOS" / "FShot"), "--version"],
-            check=True,
-            timeout=60,
-        )
+        executable = DIST / "FShot.app" / "Contents" / "MacOS" / "FShot"
+        with tempfile.TemporaryDirectory(prefix="fshot-package-cwd-") as cwd:
+            subprocess.run([str(executable), "--version"], cwd=cwd, check=True, timeout=60)
+            subprocess.run([str(executable), "--self-test"], cwd=cwd, check=True, timeout=120)
         output = build_macos_dmg(version)
     print(output)
     return 0

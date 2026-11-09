@@ -74,7 +74,7 @@ Cropping is also an image operation: releasing a dragged outer crop handle appli
 - `tests/test_main_window.py`: toolbar button sizing, tab overflow arrow placement and scroll limits, dropdown selection, window resizing, image scrollbar geometry, and padding widgets that exclude canvas padding.
 - `tests/test_version.py`: runtime version consistency with installed package metadata.
 - `tests/test_updates.py`: automatic-check scheduling, skipped versions, background execution, and error reporting.
-- Run `uv run pytest -q` and `uv run python -m compileall src tests` for cross-platform checks.
+- Run relevant tests and manual verification locally; Windows/macOS CI each run the full `uv run pytest -q` suite. See the [development guide](development.en.md).
 
 Global shortcuts, window selection, cursor capture, drag/drop, and clipboard behavior still require manual OS-level acceptance testing.
 
