@@ -34,7 +34,7 @@ def generate_icons() -> None:
     app = QApplication.instance() or QApplication([])
     del app
     png_path = GENERATED / "fshot.png"
-    camera_icon(1024).pixmap(1024, 1024).save(str(png_path), "PNG")
+    camera_icon(1024, macos=sys.platform == "darwin").pixmap(1024, 1024).save(str(png_path), "PNG")
     with Image.open(png_path) as source:
         image = source.convert("RGBA")
         image.save(

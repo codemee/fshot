@@ -214,7 +214,8 @@ def test_narrow_toolbar_opens_centered_overflow_menu(qt_app):
         window.resize(1250, 610)
         qt_app.processEvents()
         assert not extension.isVisible()
-        assert toolbar.widgetForAction(window.language_action).isVisible()
+        assert window.toolbar_more_button.isVisible()
+        assert toolbar.widgetForAction(window.language_action) is None
 
         window.resize(600, 610)
         qt_app.processEvents()
@@ -227,6 +228,42 @@ def test_narrow_toolbar_opens_centered_overflow_menu(qt_app):
         window.deleteLater()
         qt_app.processEvents()
         qt_app.setStyleSheet(original_stylesheet)
+
+
+def test_wide_toolbar_keeps_settings_in_more_menu(qt_app):
+    from fshot.main_window import EditorWindow
+
+    window = EditorWindow()
+    original_mode = window.theme_manager.mode
+    window.resize(1800, 610)
+    window.show()
+    qt_app.processEvents()
+    toolbar = window.findChild(QToolBar, "editorToolbar")
+    more = window.toolbar_more_button
+    menu = more.menu()
+    observed = {}
+
+    def choose_theme():
+        observed["actions"] = menu.actions()
+        menu.setActiveAction(window.theme_action)
+        QTest.keyClick(menu, Qt.Key.Key_Return)
+        menu.close()
+
+    try:
+        assert more.isVisible()
+        assert all(action not in toolbar.actions() for action in window.settings_actions)
+        assert window._toolbar_anchor(window.hotkey_action) == more.mapTo(window, more.rect().bottomLeft())
+        QTimer.singleShot(0, choose_theme)
+        QTest.mouseClick(more, Qt.MouseButton.LeftButton)
+        assert observed["actions"] == list(window.settings_actions)
+        assert window.theme_manager.mode != original_mode
+        assert window.theme_action.text() == window.theme_action.toolTip()
+        assert window.language_action.text() == window.language_action.toolTip()
+    finally:
+        window.hide()
+        window.theme_manager.set_mode(original_mode)
+        window.deleteLater()
+        qt_app.processEvents()
 
 
 def test_tab_navigation_shortcuts_work_from_canvas_focus(qt_app, tmp_path):

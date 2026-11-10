@@ -68,12 +68,12 @@ def _tool_bounds(name, checked, badge, line_start, line_end) -> QRectF:
     return bounds
 
 
-def camera_icon(size: int = 64) -> QIcon:
+def camera_icon(size: int = 64, *, macos: bool = False) -> QIcon:
     icon = QIcon()
     sizes = {candidate for candidate in (16, 20, 24, 32, 48, 64) if candidate <= size}
     sizes.add(size)
     for pixmap_size in sorted(sizes):
-        icon.addPixmap(_camera_pixmap(pixmap_size, tray=False))
+        icon.addPixmap(_camera_pixmap(pixmap_size, tray=False, macos=macos))
     return icon
 
 
@@ -88,6 +88,12 @@ def _camera_pixmap(size: int, tray: bool, macos: bool = False) -> QPixmap:
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = _painter(pixmap)
+    if macos and not tray:
+        # Give the freestanding camera more breathing room in the Dock.
+        # Keep the canvas resolution and menu-bar artwork unchanged.
+        painter.translate(size / 2, size / 2)
+        painter.scale(0.84, 0.84)
+        painter.translate(-size / 2, -size / 2)
     scale = size / 64
     painter.setBrush(CAMERA_INK)
     painter.setPen(Qt.PenStyle.NoPen)

@@ -14,6 +14,7 @@ class MessageDialog(QDialog):
     # Keep Qt's familiar roles and result values at the application boundary.
     Icon = QMessageBox.Icon
     StandardButton = QMessageBox.StandardButton
+    DiscardAll = QMessageBox.StandardButton.NoToAll
     ButtonRole = QMessageBox.ButtonRole
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -173,16 +174,21 @@ class MessageDialog(QDialog):
         return result
 
     @classmethod
-    def unsaved(cls, parent, title: str, text: str, *, multiple: bool):
+    def unsaved(cls, parent, title: str, text: str, *, multiple: bool, allow_discard_all: bool = False):
         dialog = cls(parent)
         dialog.setIcon(cls.Icon.Warning)
         dialog.setWindowTitle(title)
         dialog.setText(text)
-        for standard, label, role, name in (
+        buttons = [
             (cls.StandardButton.Cancel, "cancel", cls.ButtonRole.RejectRole, "cancel"),
-            (cls.StandardButton.Discard, "dont_save", cls.ButtonRole.DestructiveRole, "discard"),
-            (cls.StandardButton.Save, "save_all" if multiple else "save", cls.ButtonRole.AcceptRole, "save"),
-        ):
+            (cls.StandardButton.Discard, "dont_save_all" if multiple else "dont_save",
+             cls.ButtonRole.DestructiveRole, "discard"),
+        ]
+        if allow_discard_all:
+            buttons.append((cls.DiscardAll, "dont_save_all", cls.ButtonRole.DestructiveRole, "discardAll"))
+        buttons.append((cls.StandardButton.Save, "save_all" if multiple else "save",
+                        cls.ButtonRole.AcceptRole, "save"))
+        for standard, label, role, name in buttons:
             button = dialog.addButton(dialog._language.text(label), role)
             button.setObjectName(name)
             dialog._standard[button] = standard

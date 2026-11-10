@@ -38,6 +38,7 @@ The Windows virtual capture path uses its own driver provisioning and input prox
 - Accessibility hit testing finds the smallest valid element under the pointer and clamps results to the owning window.
 - Current `NSCursor` image, hotspot, and position are included best-effort.
 - Shared Qt tray, editor, clipboard, and save workflows are used.
+- The application-level Dock icon uses a 512 px canvas with the camera centered at 84% of its original scale for extra padding. Packaged App icons use the same layout; menu-bar artwork retains its existing size.
 
 First launch requests Accessibility permission; first capture requests Screen Recording permission. For a DMG installation, enable both permissions for `FShot.app` under **System Settings → Privacy & Security → Accessibility / Screen Recording**. When running through `uv`/`uvx`, the entries usually belong to Terminal, iTerm2, Warp, or the IDE host that launched the command. After changing access, fully quit and reopen FShot or that host app. Without Accessibility permission, global shortcuts and control selection may be unavailable, while window hit testing falls back best-effort.
 

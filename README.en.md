@@ -50,11 +50,11 @@ When installed with `uv tool install`, FShot checks PyPI in the background at mo
 
 FShot starts with its editor hidden and remains in the system tray. Double-click the tray icon to show the editor; use the tray context menu to exit.
 
-Shortcut settings, theme, and language form a group at the right edge of the toolbar, separated from the other tools. They remain available through the overflow menu in narrow windows.
+Shortcut settings, theme, and language live in the “…” menu at the right edge of the toolbar. In narrow windows, the same menu also includes tools that no longer fit.
 
 Below the toolbar, a rounded frame encloses both the tab row and image area, with aligned horizontal edges. Its top border separates the workspace from the toolbar, which has no additional bottom rule. Thin chevrons at opposite ends of the tab row scroll overflowing tabs, and a downward chevron on the right opens the tab list. Both Windows and macOS retain full tab labels. Small squares continue to mark unsaved changes.
 
-The theme button cycles through Follow System, Light, and Dark. Dark mode uses an Evangelion Unit-01-inspired purple and lime palette. The language button cycles through Follow System, Traditional Chinese, and English. Both choices are persisted. Toolbar tooltips follow the selected language and include shortcuts where available.
+The theme menu item cycles through Follow System, Light, and Dark. Dark mode uses an Evangelion Unit-01-inspired purple and lime palette. The language menu item cycles through Follow System, Traditional Chinese, and English. Both choices are persisted. Toolbar tooltips follow the selected language and include shortcuts where available.
 
 Selected state buttons use the hover background and accent-colored icons: blue in light mode and lime in dark mode, making active tools and options easy to identify.
 
@@ -118,6 +118,8 @@ These Windows/Linux shortcuts work within the editor window:
 On macOS, closing and numbered selection use <kbd>⌘</kbd>; previous/next use Qt's platform-standard bindings. Closing the last tab leaves the editor window open.
 
 Before closing tabs, closing the editor, quitting, or updating, unsaved screenshots can be saved, discarded, or kept by cancelling. Save all processes each document separately; cancelling a save or encountering a write error preserves the tabs and stops the close/update. Closing the editor leaves FShot in the system tray.
+
+When multiple images have unsaved changes, the discard button says “Don't save any.” When closing a single unsaved tab, “Don't save” closes only that tab. If other tabs exist, “Don't save any” also appears and clears image tabs across all panes while keeping the editor open; this extra option is omitted for the last remaining tab.
 
 The left side of the status bar shows the active image dimensions in pixels (width × height). It updates when switching tabs or panes, cropping, rotating, downscaling, or undoing. Display zoom does not change these dimensions.
 

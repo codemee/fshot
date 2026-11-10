@@ -154,6 +154,29 @@ class EditorTabBar(QTabBar):
         return super().eventFilter(watched, event)
 
 
+def _paint_more_tools(button: QToolButton) -> None:
+    option = QStyleOptionToolButton()
+    button.initStyleOption(option)
+    option.icon = QIcon()
+    option.text = ""
+    option.arrowType = Qt.ArrowType.NoArrow
+    option.features = QStyleOptionToolButton.ToolButtonFeature.None_
+    painter = QPainter(button)
+    button.style().drawComplexControl(QStyle.ComplexControl.CC_ToolButton, option, painter, button)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(button.palette().color(QPalette.ColorRole.ButtonText))
+    # Draw the same centered, 14.5 px-wide glyph at every font size.
+    for offset in (-6, 0, 6):
+        painter.drawEllipse(QPointF(button.width() / 2 + offset, button.height() / 2), 1.25, 1.25)
+    painter.end()
+
+
+class MoreToolsButton(QToolButton):
+    def paintEvent(self, event) -> None:
+        _paint_more_tools(self)
+
+
 class EditorToolBar(QToolBar):
     """Use a popup for overflow while keeping the toolbar height fixed."""
 
@@ -168,6 +191,9 @@ class EditorToolBar(QToolBar):
         extension.installEventFilter(self)
 
     def eventFilter(self, watched, event) -> bool:
+        if event.type() == QEvent.Type.Paint and isinstance(watched, QToolButton):
+            _paint_more_tools(watched)
+            return True
         if event.type() in (QEvent.Type.MouseButtonPress, QEvent.Type.KeyPress):
             # QToolBarLayout resets the extension's menu when it relayouts.
             # Restore our popup before QToolButton handles the input event.
@@ -326,7 +352,7 @@ class EditorWindow(QMainWindow):
         self.theme_manager = theme_manager or ThemeManager(QApplication.instance())
         self.language_manager = language_manager or LanguageManager()
         self.app_settings = app_settings if app_settings is not None else QSettings()
-        self.setWindowIcon(camera_icon())
+        self.setWindowIcon(camera_icon(macos=sys.platform == "darwin"))
         self.setAcceptDrops(True)
         self.settings = DrawingSettings.default()
         self.capture_settings = CaptureSettings()
@@ -788,14 +814,20 @@ class EditorWindow(QMainWindow):
             summary = self._tr("unsaved_single", title=documents[0].title)
         else:
             summary = self._tr("unsaved_many", count=len(documents))
+        allow_discard_all = message_key == "close_discard_tab" and len(self._all_documents()) > 1
         context = {
+            "close_discard_tab": "unsaved_tab_help" if allow_discard_all else "unsaved_close_help",
             "update_discard_all": "unsaved_update_help",
             "quit_unsaved": "unsaved_quit_help",
         }.get(message_key, "unsaved_close_help")
         reply = MessageDialog.unsaved(
             self, self._tr("unsaved_title"), f"{summary}\n\n{self._tr(context)}",
             multiple=len(documents) > 1,
+            allow_discard_all=allow_discard_all,
         )
+        if reply == MessageDialog.DiscardAll and message_key == "close_discard_tab":
+            self._discard_all_tabs()
+            return True
         if reply == MessageDialog.StandardButton.Discard:
             return True
         if reply == MessageDialog.StandardButton.Save:
@@ -1054,19 +1086,22 @@ class EditorWindow(QMainWindow):
         self.toolbar_right_spacer.setObjectName("toolbarRightSpacer")
         self.toolbar_right_spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         toolbar.addWidget(self.toolbar_right_spacer)
-        toolbar.addSeparator()
 
         self.hotkey_action = QAction(tool_icon("keyboard"), "Capture shortcuts", self)
         self.hotkey_action.triggered.connect(self._show_hotkey_panel)
-        toolbar.addAction(self.hotkey_action)
 
         self.theme_action = QAction(self._theme_icon(), "Theme: follow system", self)
         self.theme_action.triggered.connect(self._cycle_theme)
-        toolbar.addAction(self.theme_action)
 
         self.language_action = QAction(tool_icon("language", badge="system"), "Language", self)
         self.language_action.triggered.connect(self._cycle_language)
-        toolbar.addAction(self.language_action)
+        self.settings_actions = (self.hotkey_action, self.theme_action, self.language_action)
+        self.toolbar_more_button = MoreToolsButton()
+        self.toolbar_more_button.setObjectName("toolbarMoreButton")
+        self.toolbar_more_button.setText("…")
+        self.toolbar_more_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self.toolbar_more_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        toolbar.addWidget(self.toolbar_more_button)
         add_edge_space()
         for action in toolbar.actions():
             button = toolbar.widgetForAction(action)
@@ -1085,6 +1120,7 @@ class EditorWindow(QMainWindow):
             TOOLBAR_BUTTON_SIZE.height(),
         )
         toolbar.configure_overflow(lambda menu: self._populate_toolbar_overflow(toolbar, menu))
+        self.toolbar_more_button.setMenu(toolbar.overflow_menu)
         self._refresh_toolbar_icons()
 
     def _populate_toolbar_overflow(self, toolbar: QToolBar, menu: QMenu) -> None:
@@ -1095,7 +1131,8 @@ class EditorWindow(QMainWindow):
                 separator_pending = bool(menu.actions())
                 continue
             widget = toolbar.widgetForAction(action)
-            if widget is self.toolbar_right_spacer or widget in self.toolbar_edge_spacers:
+            if (widget is self.toolbar_right_spacer or widget is self.toolbar_more_button
+                    or widget in self.toolbar_edge_spacers):
                 continue
             if not action.isVisible() or widget is None or widget.isVisible():
                 continue
@@ -1113,6 +1150,9 @@ class EditorWindow(QMainWindow):
                 menu.addMenu(self.shape_menu)
             else:
                 menu.addAction(action)
+        if menu.actions():
+            menu.addSeparator()
+        menu.addActions(self.settings_actions)
 
     def _tool_action(self, text: str, shortcut: str, tool: Tool, icon_name: str) -> QAction:
         action = QAction(tool_icon(icon_name), text, self)
@@ -1726,6 +1766,9 @@ class EditorWindow(QMainWindow):
             return
         if doc.is_dirty and not self._confirm_unsaved([doc], "close_discard_tab"):
             return
+        # "Don't save any" has already removed this page along with all others.
+        if self.documents.get(index) is not doc:
+            return
         page = self.tabs.widget(index)
         self.tabs.blockSignals(True)
         self.tabs.removeTab(index)
@@ -2047,6 +2090,7 @@ class EditorWindow(QMainWindow):
                 effective=self._tr(f"theme_{effective}"),
             )
         )
+        self.theme_action.setText(self.theme_action.toolTip())
         language_mode = self.language_manager.mode.value
         language_effective = self.language_manager.effective_mode.value
         self.language_action.setToolTip(
@@ -2056,6 +2100,8 @@ class EditorWindow(QMainWindow):
                 effective=self._tr(f"language_{language_effective}"),
             )
         )
+        self.language_action.setText(self.language_action.toolTip())
+        self.toolbar_more_button.setToolTip(self._tr("more_tools"))
 
     def _is_dark_theme(self) -> bool:
         return self.theme_manager.effective_mode == ThemeMode.DARK
@@ -2098,6 +2144,12 @@ class EditorWindow(QMainWindow):
                     self._ensure_tab_status_widget(index)
 
     def _toolbar_anchor(self, action: QAction) -> QPoint:
+        if action in self.settings_actions:
+            button = self.toolbar_more_button
+            if not button.isVisible():
+                toolbar = button.parentWidget()
+                button = toolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            return button.mapTo(self, button.rect().bottomLeft())
         for toolbar in self.findChildren(QToolBar):
             widget = toolbar.widgetForAction(action)
             if widget:

@@ -30,7 +30,7 @@ def test_application_icon_is_set_before_editor_is_shown(qt_app, tmp_path, monkey
         assert not controller.window.isVisible()
         assert QSize(size, size) in qt_app.windowIcon().availableSizes()
         assert (qt_app.windowIcon().pixmap(size, size).toImage()
-                == camera_icon(size).pixmap(size, size).toImage())
+                == camera_icon(size, macos=platform == "darwin").pixmap(size, size).toImage())
     finally:
         qt_app.setWindowIcon(previous_icon)
 

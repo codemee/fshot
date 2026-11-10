@@ -78,6 +78,79 @@ def test_unsaved_dialog_returns_explicit_action(qt_app, button, result):
     assert MessageDialog.unsaved(None, "Unsaved screenshots", "3 screenshots", multiple=True) == result
 
 
+@pytest.mark.parametrize("multiple,allow_all", [(True, False), (False, True)])
+def test_unsaved_buttons_make_discard_scope_explicit(qt_app, multiple, allow_all):
+    observed = {}
+
+    def inspect():
+        dialog = QApplication.activeModalWidget()
+        language = dialog._language
+        observed["discard"] = dialog.findChild(QPushButton, "discard").text()
+        observed["expected"] = language.text("dont_save_all" if multiple else "dont_save")
+        all_button = dialog.findChild(QPushButton, "discardAll")
+        observed["all"] = all_button.text() if all_button else None
+        observed["expected_all"] = language.text("dont_save_all") if allow_all else None
+        observed["cancel_default"] = dialog.findChild(QPushButton, "cancel").isDefault()
+        dialog.reject()
+
+    QTimer.singleShot(0, inspect)
+    MessageDialog.unsaved(None, "Unsaved screenshots", "Images", multiple=multiple,
+                          allow_discard_all=allow_all)
+    assert observed["discard"] == observed["expected"]
+    assert observed["all"] == observed["expected_all"]
+    assert observed["cancel_default"]
+
+
+def test_single_remaining_tab_has_no_discard_all_option(qt_app):
+    window = EditorWindow()
+    window._add_image(QImage(20, 10, QImage.Format.Format_ARGB32), "only image")
+    observed = {}
+
+    def inspect():
+        dialog = QApplication.activeModalWidget()
+        observed["all"] = dialog.findChild(QPushButton, "discardAll")
+        observed["text"] = dialog.body.toPlainText()
+        observed["help"] = window._tr("unsaved_close_help")
+        dialog.findChild(QPushButton, "cancel").click()
+
+    QTimer.singleShot(0, inspect)
+    try:
+        window._close_tab(0)
+        assert observed["all"] is None
+        assert observed["help"] in observed["text"]
+        assert len(window._all_documents()) == 1
+    finally:
+        window.hide()
+        window.deleteLater()
+
+
+@pytest.mark.parametrize("button,remaining", [("discardAll", 0), ("discard", 2), ("cancel", 3)])
+def test_single_tab_discard_scope_across_panes_keeps_editor_open(qt_app, monkeypatch, button, remaining):
+    window = EditorWindow()
+    for index in range(3):
+        window._add_image(QImage(20, 10, QImage.Format.Format_ARGB32), f"image-{index}", dirty=index != 2)
+    source = window.tabs
+    window._move_tab(source, 0, source, "right")
+    window.show()
+    qt_app.processEvents()
+    documents = window._all_documents()
+    monkeypatch.setattr(window, "_save_document", lambda doc: pytest.fail("Discard must not save images"))
+    QTimer.singleShot(0, lambda: QApplication.activeModalWidget().findChild(QPushButton, button).click())
+    try:
+        window._close_tab(0)
+        assert len(window._all_documents()) == remaining
+        assert window.isVisible()
+        if button == "discardAll":
+            assert len(window.workspace.panes) == 1
+            assert window.tabs.count() == 0
+        elif button == "cancel":
+            assert window._all_documents() == documents
+            assert len(window.workspace.panes) == 2
+    finally:
+        window.hide()
+        window.deleteLater()
+
+
 @pytest.mark.parametrize("existing_paths", [False, True])
 def test_save_all_before_closing_saves_each_document_image(qt_app, tmp_path, monkeypatch, existing_paths):
     settings = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)

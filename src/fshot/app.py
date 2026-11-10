@@ -175,7 +175,8 @@ class FShotApplication(QObject):
         self.app.setOrganizationName("FShot")
         # macOS uses the application icon for the Dock, including when run
         # through uv/uvx without an app bundle. A QWidget icon alone is not enough.
-        self.app.setWindowIcon(camera_icon(512 if sys.platform == "darwin" else 64))
+        self.app.setWindowIcon(camera_icon(512 if sys.platform == "darwin" else 64,
+                                          macos=sys.platform == "darwin"))
         self.app.setQuitOnLastWindowClosed(False)
         self.packaged = bool(getattr(sys, "frozen", False)) if packaged is None else packaged
         self.update_settings = update_settings if update_settings is not None else QSettings()
