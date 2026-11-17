@@ -21,7 +21,7 @@ For regular use, download a build from [GitHub Releases](https://github.com/code
 - Windows 10/11 x64: a portable `FShot-<version>-windows-x64.zip`; extract the entire folder and run `FShot.exe` inside it. Python is not required.
 - Apple Silicon Mac: `FShot-<version>-macos-arm64.dmg`; open it and drag `FShot.app` to Applications. Intel Macs are not supported.
 
-Windows may show a SmartScreen prompt on first launch. On macOS, you may need **Open Anyway** under System Settings → Privacy & Security, followed by Screen Recording and Accessibility permissions. See the [Windows installation guide](docs/install-windows.en.md) or [macOS installation guide](docs/install-macos.en.md) for setup, permissions, and download verification.
+Windows may show a SmartScreen prompt on first launch. On macOS, you may need **Open Anyway** under System Settings → Privacy & Security, followed by Screen Recording and Accessibility permissions. See the [Windows installation guide](https://github.com/codemee/fshot/blob/main/docs/install-windows.en.md) or [macOS installation guide](https://github.com/codemee/fshot/blob/main/docs/install-macos.en.md) for setup, permissions, and download verification.
 
 ### Run from PyPI
 
@@ -68,7 +68,9 @@ Images can also be added by drag-and-drop or clipboard paste. A dropped image op
 
 For higher-resolution window captures, switch the toolbar monitor button to virtual mode; the choice is remembered. This feature needs a virtual display and the relevant system permissions.
 
-See the [Virtual Screen Capture Guide](docs/virtual-screen.en.md) for Windows/macOS setup, delayed interaction previews, and limitations.
+See the [Virtual Screen Capture Guide](https://github.com/codemee/fshot/blob/main/docs/virtual-screen.en.md) for Windows/macOS setup, delayed interaction previews, and limitations.
+
+In virtual mode, `Ctrl+Shift+R` moves the active window to the virtual display and selects a rectangle from a frozen preview of the whole display. A positive delay lets you interact before freezing. Release the mouse to crop original pixels; Esc or right-click cancels. `Ctrl+Shift+Q` recaptures the same window and rectangle.
 
 ## Capture Shortcuts
 
@@ -133,16 +135,16 @@ Each pane has its own tab bar and tab list. Drop a tab in another pane's center 
 
 ## More help
 
-- [Windows installation and permissions](docs/install-windows.en.md)
-- [macOS installation and permissions](docs/install-macos.en.md)
-- [Virtual Screen Capture Guide](docs/virtual-screen.en.md)
+- [Windows installation and permissions](https://github.com/codemee/fshot/blob/main/docs/install-windows.en.md)
+- [macOS installation and permissions](https://github.com/codemee/fshot/blob/main/docs/install-macos.en.md)
+- [Virtual Screen Capture Guide](https://github.com/codemee/fshot/blob/main/docs/virtual-screen.en.md)
 
-For contributions, see the [Development Guide](docs/development.en.md), including links to architecture, platform notes, and packaging documentation.
+For contributions, see the [Development Guide](https://github.com/codemee/fshot/blob/main/docs/development.en.md), including links to architecture, platform notes, and packaging documentation.
 
 ## License
 
-FShot is licensed under the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**. See [LICENSE](LICENSE) for the full terms. Third-party components retain their respective licenses.
+FShot is licensed under the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**. See [LICENSE](https://github.com/codemee/fshot/blob/main/LICENSE) for the full terms. Third-party components retain their respective licenses.
 
-Code signing status: [download verification and current signing status](docs/code-signing-policy.md). Current Windows releases are unsigned.
+Code signing status: [download verification and current signing status](https://github.com/codemee/fshot/blob/main/docs/code-signing-policy.md). Current Windows releases are unsigned.
 
 View version and license information in About FShot: open the title-bar icon's system menu on Windows, or choose FShot → About FShot in the macOS menu bar.

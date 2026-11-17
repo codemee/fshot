@@ -177,20 +177,19 @@ class VirtualCaptureSession:
 
     def __init__(self):
         self.last = None
+        self.last_region = None
 
     def active_target(self):
         import win32gui
 
         return _window_target_from_hwnd(win32gui.GetForegroundWindow())
 
-    def capture(self, service, mode, settings, tr, target=None, frozen=None):
+    def capture(self, service, mode, settings, tr, target=None, frozen=None, *, region_selection=None):
         if mode == CaptureMode.FULLSCREEN:
             image = service._capture_rect_for_mode(mode, service._current_screen_rect(), settings)
             if image is not None:
                 self.last = (mode, None)
             return image
-        if mode == CaptureMode.REGION:
-            raise RuntimeError(tr("virtual_region_unsupported"))
         display = automatic_display(tr)
         if mode == CaptureMode.WINDOW_UNDER_CURSOR:
             # Freeze before the selector takes focus; delay applies only to the
@@ -199,9 +198,17 @@ class VirtualCaptureSession:
             target = service._select_window_target(frozen)
             if target is None:
                 return None
-        elif mode == CaptureMode.ACTIVE_WINDOW and target is None:
+        elif mode in {CaptureMode.ACTIVE_WINDOW, CaptureMode.REGION} and target is None:
             raise RuntimeError(tr("virtual_target_unavailable"))
-        image = self._capture_target(service, display, target, settings, tr, interactive=mode == CaptureMode.ACTIVE_WINDOW)
+        image = self._capture_target(service, display, target, settings, tr,
+                                     interactive=mode in {CaptureMode.ACTIVE_WINDOW, CaptureMode.REGION},
+                                     region=mode == CaptureMode.REGION)
+        if image is not None and mode == CaptureMode.REGION:
+            from fshot.virtual_region import crop_snapshot
+
+            image, selection = crop_snapshot(image, tr, region_selection)
+            if image is not None:
+                self.last_region = selection
         if image is not None:
             self.last = (mode, target)
         return image
@@ -214,9 +221,11 @@ class VirtualCaptureSession:
             return self.capture(service, _mode, settings, tr)
         if target is not None and target.resolve() is None:
             return None
+        if _mode == CaptureMode.REGION:
+            return self.capture(service, _mode, settings, tr, target, region_selection=self.last_region)
         return self._capture_target(service, automatic_display(tr), target, settings, tr, interactive=_mode == CaptureMode.ACTIVE_WINDOW)
 
-    def _capture_target(self, service, display, target, settings, tr, *, interactive=False):
+    def _capture_target(self, service, display, target, settings, tr, *, interactive=False, region=False):
         started = time.perf_counter()
         hwnd = target.owner_hwnd if target is not None else None
         logging.getLogger(__name__).warning(
@@ -239,6 +248,8 @@ class VirtualCaptureSession:
             if interactive and settings.delay_seconds > 0:
                 from fshot.virtual_interactive import delayed_interactive_capture
 
+                if region:
+                    return delayed_interactive_capture(service, display, target, settings, tr, region=True)
                 return delayed_interactive_capture(service, display, target, settings, tr)
             if settings.delay_seconds > 0 and service._countdown(settings.delay_seconds):
                 return None
@@ -269,6 +280,8 @@ class VirtualCaptureSession:
             logging.getLogger(__name__).warning(
                 "Virtual capture output: owner=%s owner_rect=%s capture_rect=%s", hwnd, owner_rect, rect,
             )
+            if region:
+                rect = resolve_display(display)
             image = service._grab_rect(rect)
             logging.getLogger(__name__).warning("Virtual capture image ready: %.3fs (configured delay=%s)", time.perf_counter()-started, settings.delay_seconds)
             if settings.include_cursor:

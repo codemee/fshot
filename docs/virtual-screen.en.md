@@ -13,7 +13,7 @@ The toolbar monitor button switches between physical (solid outline) and virtual
 - <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd>: select a window/control on the original monitor, move its owning window, and capture the tracked target. An unavailable or unstable target produces an error.
 - <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>: capture the monitor containing the cursor directly, in either mode.
 - <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>: repeat the previous successful capture; physical and virtual modes maintain separate histories.
-- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>: unavailable in virtual mode; switch to physical mode for region capture.
+- <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>: move the active window and select a rectangle from a frozen native-resolution virtual-display image.
 
 FShot chooses the active virtual monitor with the largest pixel area. Window width and height are scaled independently according to their original proportions of the source monitor. Windows display scaling is left to the user. Minimized windows must be restored first; windows that cannot fit the destination work area are rejected. The original placement is restored after capture, cancellation, or failure. Layout and image detail depend on the target application's DPI support.
 
@@ -43,7 +43,7 @@ If BetterDisplay is missing, FShot asks to install it with Homebrew; if Homebrew
 
 `Ctrl+Shift+W` can select a window or control on the original display. Selecting a title bar or frame captures the whole window; selecting a control captures its updated Accessibility bounds after moving the owning window. If the target disappears or cannot be uniquely identified, capture stops and restores the window. It does not choose a different control at the old coordinates.
 
-Full-screen capture follows the ordinary macOS behavior. Region capture is unavailable in virtual mode. Minimized, full-screen, or immovable/unresizable windows are rejected. Display disconnection, configuration changes, rejected dimensions, or an obstructed target center also stop capture and attempt restoration; the center check cannot guarantee that every corner is unobstructed.
+Full-screen capture follows the ordinary macOS behavior. Region capture selects native pixels from a frozen preview. Minimized, full-screen, or immovable/unresizable windows are rejected. Display disconnection, configuration changes, rejected dimensions, or an obstructed target center also stop capture and attempt restoration; the center check cannot guarantee that every corner is unobstructed.
 
 ### Delayed interaction preview
 
@@ -62,3 +62,7 @@ If forwarding is rejected, check Accessibility/Input Monitoring permissions for 
 FShot uses the fixed name `FShot-4K` and may adopt an existing same-name VirtualScreen definition on first use. It saves tagID/serial/vendor/model identity for retries and refuses ambiguous names or identity changes. It does not reconfigure other display names or delete older randomly named definitions. The destination UUID is saved and resolved again when switching modes.
 
 Switching to physical mode, quitting FShot, or a failed creation attempt leaves the BetterDisplay definition in place. Disconnect or remove it manually in BetterDisplay when no longer needed. See the [macOS implementation history](macos-virtual-screen.md) (Traditional Chinese) for development details.
+
+### Virtual region capture (Windows/macOS)
+
+Keep the cursor on a physical monitor, focus the target window and press `Ctrl+Shift+R`. A positive delay opens the existing interactive preview before freezing; zero delay freezes directly. FShot saves the full virtual display at native resolution and restores the target before showing the frozen selection preview. Drag and release to crop; Esc or right-click cancels. Dimensions use original image pixels. `Ctrl+Shift+Q` recaptures the same window and pixel rectangle without selecting again; changed pixel dimensions require a new selection. Cancellation preserves the previous successful history.

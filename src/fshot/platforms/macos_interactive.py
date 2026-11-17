@@ -628,7 +628,7 @@ def draw_preview_cursor(image, rect, display, position):
     image.paste(bitmap, (x, y), bitmap)
 
 
-def delayed_interactive_capture(service, display, target, settings, tr):
+def delayed_interactive_capture(service, display, target, settings, tr, *, region=False):
     appkit, quartz = macos._frameworks()
     point = quartz.CGEventGetLocation(quartz.CGEventCreate(None))
     if display.rect.left <= point.x < display.rect.left + display.rect.width and \
@@ -712,7 +712,7 @@ def delayed_interactive_capture(service, display, target, settings, tr):
                 timer.stop()
                 mouse.freeze()
                 frames.stop()
-                rect = capture_bounds(target, display, baseline)
+                rect = display.rect if region else capture_bounds(target, display, baseline)
                 image = capture_rect(display, rect, False)
                 if settings.include_cursor:
                     draw_preview_cursor(image, rect, display, mouse.pointer)

@@ -252,7 +252,7 @@ class FShotApplication(QObject):
         settings = self.window.capture_settings
         if settings.virtual_screen and sys.platform in {"win32", "darwin"}:
             try:
-                target = self.virtual_capture.active_target() if mode == CaptureMode.ACTIVE_WINDOW else None
+                target = self.virtual_capture.active_target() if mode in {CaptureMode.ACTIVE_WINDOW, CaptureMode.REGION} else None
             except Exception as exc:
                 self._show_capture_error(exc)
                 return

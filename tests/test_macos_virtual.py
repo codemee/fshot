@@ -105,9 +105,9 @@ def test_capture_session_restores_window_and_only_remembers_success(monkeypatch,
     assert (session.last is not None) == (outcome == "success")
 
 
-def test_virtual_region_selection_remains_unsupported():
+def test_virtual_region_requires_original_target():
     session = virtual.VirtualCaptureSession()
-    with pytest.raises(RuntimeError, match="virtual_region_unsupported"):
+    with pytest.raises(RuntimeError, match="virtual_target_unavailable"):
         session.capture(None, CaptureMode.REGION, CaptureSettings(), lambda key: key)
 
 

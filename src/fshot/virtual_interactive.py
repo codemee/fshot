@@ -388,7 +388,7 @@ def _capture_bounds(hwnd, display: CaptureRect, baseline) -> CaptureRect:
     return bounds
 
 
-def delayed_interactive_capture(service, display, target, settings, tr):
+def delayed_interactive_capture(service, display, target, settings, tr, *, region=False):
     import win32api
     import win32gui
     from fshot.virtual_screen import resolve_display
@@ -467,12 +467,13 @@ def delayed_interactive_capture(service, display, target, settings, tr):
                 view.remaining = seconds
                 view.update(QRect(0, 0, view.width(), 64))
             if remaining <= 0:
+                timer.stop()
                 mouse.timer.stop()
                 mouse.flush()
                 if mouse.failure is not None:
                     raise mouse.failure
                 frames.stop()
-                rect = _capture_bounds(hwnd, display.rect, baseline)
+                rect = display.rect if region else _capture_bounds(hwnd, display.rect, baseline)
                 image = service._grab_rect(rect)
                 if settings.include_cursor:
                     service._draw_cursor(image, rect)

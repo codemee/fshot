@@ -386,16 +386,15 @@ def capture_rect(display: Display, rect: CaptureRect, include_cursor: bool) -> I
 class VirtualCaptureSession:
     def __init__(self):
         self.last = None
+        self.last_region = None
 
     def active_target(self):
         return active_target()
 
-    def capture(self, service, mode, settings, tr, target=None, frozen=None):
+    def capture(self, service, mode, settings, tr, target=None, frozen=None, *, region_selection=None):
         if mode == CaptureMode.FULLSCREEN:
             # Preserve ordinary full-screen behavior, without moving a window.
             image = service.capture(mode, settings)
-        elif mode == CaptureMode.REGION:
-            raise RuntimeError(tr("virtual_region_unsupported"))
         else:
             if mode == CaptureMode.WINDOW_UNDER_CURSOR and target is None:
                 selected = service._select_window_target(frozen)
@@ -412,26 +411,30 @@ class VirtualCaptureSession:
                 if mode == CaptureMode.WINDOW_UNDER_CURSOR:
                     raise_window(target)
                     QApplication.processEvents()
-                if mode == CaptureMode.ACTIVE_WINDOW and settings.delay_seconds > 0:
+                if mode in {CaptureMode.ACTIVE_WINDOW, CaptureMode.REGION} and settings.delay_seconds > 0:
                     from fshot.platforms.macos_interactive import delayed_interactive_capture
 
-                    image = delayed_interactive_capture(service, display, target, settings, tr)
-                    if image is not None:
-                        self.last = (mode, target)
-                    return image
-                if settings.delay_seconds > 0 and service._countdown(settings.delay_seconds):
+                    image = delayed_interactive_capture(service, display, target, settings, tr, region=True) if mode == CaptureMode.REGION else delayed_interactive_capture(service, display, target, settings, tr)
+                elif settings.delay_seconds > 0 and service._countdown(settings.delay_seconds):
                     return None
-                resolve_display(display)
-                if target_bounds(target) != rect:
-                    raise RuntimeError(tr("virtual_target_unavailable"))
-                capture_bounds = selected_bounds(target) if target.control is not None else rect
-                if capture_bounds is None:
-                    raise RuntimeError(tr("virtual_control_unavailable"))
-                visible = macos._window_target_at_point(capture_bounds.left + capture_bounds.width // 2,
-                                                        capture_bounds.top + capture_bounds.height // 2)
-                if visible is None or visible[1:] != (target.window_id, target.pid):
-                    raise RuntimeError(tr("virtual_target_obscured"))
-                image = capture_rect(display, capture_bounds, settings.include_cursor)
+                if not (mode in {CaptureMode.ACTIVE_WINDOW, CaptureMode.REGION} and settings.delay_seconds > 0):
+                    resolve_display(display)
+                    if target_bounds(target) != rect:
+                        raise RuntimeError(tr("virtual_target_unavailable"))
+                    capture_bounds = selected_bounds(target) if target.control is not None else rect
+                    if capture_bounds is None:
+                        raise RuntimeError(tr("virtual_control_unavailable"))
+                    visible = macos._window_target_at_point(capture_bounds.left + capture_bounds.width // 2,
+                                                            capture_bounds.top + capture_bounds.height // 2)
+                    if visible is None or visible[1:] != (target.window_id, target.pid):
+                        raise RuntimeError(tr("virtual_target_obscured"))
+                    image = capture_rect(display, display.rect if mode == CaptureMode.REGION else capture_bounds, settings.include_cursor)
+        if image is not None and mode == CaptureMode.REGION:
+            from fshot.virtual_region import crop_snapshot
+
+            image, selection = crop_snapshot(image, tr, region_selection)
+            if image is not None:
+                self.last_region = selection
         if image is not None:
             self.last = (mode, target)
         return image
@@ -444,4 +447,6 @@ class VirtualCaptureSession:
             return None
         if target is not None and target.control is not None and selected_bounds(target) is None:
             return None
+        if mode == CaptureMode.REGION:
+            return self.capture(service, mode, settings, tr, target, region_selection=self.last_region)
         return self.capture(service, mode, settings, tr, target)

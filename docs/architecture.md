@@ -60,7 +60,7 @@
   - 搜尋 PATH、標準 prefix 與使用者 homebrew prefix，支援 Finder 啟動的環境。經同意後由 Terminal 執行官方 Homebrew installer 或 brew cask install；不以 root 執行 brew、不收集密碼。私有暫存 shell wrapper 記錄 exit status，Qt event loop 輪詢完成，成功再驗證安裝存在；30 分鐘逾時不接續建立，提醒 Terminal 程序可能仍在運行。
 
 - `platforms/macos_interactive.py`
-  - 僅虛擬作用中視窗且延遲大於 0 時啟用。ScreenCaptureKit 的 30 fps stream 在 libdispatch serial queue 回呼，CVPixelBuffer 鎖定期間複製為 QImage；跳過非完整 frame，信箱只保留最新影像，Qt queued signal 更新非啟用預覽。首張畫面就緒後才開始倒數。
+  - 虛擬作用中視窗或矩形區域且延遲大於 0 時啟用。ScreenCaptureKit 的 30 fps stream 在 libdispatch serial queue 回呼，CVPixelBuffer 鎖定期間複製為 QImage；跳過非完整 frame，信箱只保留最新影像，Qt queued signal 更新非啟用預覽。首張畫面就緒後才開始倒數。
   - 背景 Quartz event tap 攔截預覽內的滑鼠與 Esc；以顯示後的預覽全域 points 邊界映射實體游標絕對位置，保留原事件 flags／滾輪／點擊資料。由 `GetProcessForPID` 解析原生程序佇列，再以 `CGEventPostToPSN` 派送視窗綁定事件；保留實體游標移動事件，不 warp 全域游標。離開預覽停止轉送，拖曳維持捕捉至放開。鍵盤其他事件不攔截，焦點保留目標程式。點擊紀錄包含映射座標、命中視窗與派送進度；API 無接收確認，實際處理仍需手動驗收。
   - 每 200ms 驗證目標及焦點，每秒檢查螢幕配置，最終擷取前再檢查。倒數到期先停止 timer（避免原生等待重新進入 final capture）、凍結滑鼠輸入及停止 stream，再擷取原生像素與可辨識的新 popup 聯集。
   - finally 關閉 stream、停用／invalidate event tap、釋放按鍵；外層 moved_window 還原視窗。Qt 預覽位於實體螢幕，與擷取螢幕分離。最終游標以映射位置與 HiDPI 比例合成至輸出，實際游標不搬移。
@@ -72,7 +72,7 @@
   - 延遲操作預覽使用獨立背景執行緒，依 Win32 顯示器名稱選用 DXGI output；初始化失敗時回退至執行緒專屬 MSS context。BGRA 轉為 QImage 並縮小至預覽像素尺寸；有鎖的單張信箱只保留最新影像，並以最多一個待處理的 queued signal 通知介面更新，避免累積舊畫面及額外輪詢等待。滑鼠移動以 4ms precise timer 合併轉送，按鍵／滾輪在下一輪事件迴圈處理；游標只更新新舊位置附近區域，預覽繪圖略過未變更的標題。目標邊界每 200ms、螢幕配置每秒及最終擷取前驗證。輸出前停止背景預覽，再由原擷取流程取得完整解析度。
   - `virtual_interactive.py` 僅在虛擬作用中視窗擷取且延遲大於 0 時啟用。實體螢幕的非啟用預覽顯示完整虛擬螢幕；倒數期間以暫時 WH_MOUSE_LL hook 與 SendInput 轉送滑鼠，排除注入事件避免迴圈，鍵盤保留目標視窗焦點。finally 解除 hook、釋放按鍵及還原游標；先擷取原生功能表及新開啟的同程序 owned popup，再關閉預覽。
   - 工具列切換透過 application validator 檢查啟用中的虛擬螢幕；`virtual_display_setup.py` 檢查 VDD 驅動檔／裝置，使用者同意後以 QProcess 啟動 UAC helper，備份設定並建立一個 4K 延伸螢幕。主程式維持事件迴圈，失敗或取消會回到實體模式。
-  - `VirtualCaptureSession` 提供快捷鍵模式的直接擷取與獨立 repeat 紀錄：前景視窗在事件處理前保存原生身分；選取控制項保留所屬 HWND，跨 DPI 移動後以 UIA RuntimeId 或唯一的 AutomationId／類型／class／名稱重新尋找元件，不按舊座標猜測。忽略部分 provider 在虛擬螢幕上的 offscreen 標記，但仍要求與所屬視窗相交並裁切其可見部分。區域擷取暫不支援。
+  - `VirtualCaptureSession` 提供快捷鍵模式的直接擷取與獨立 repeat 紀錄：前景視窗在事件處理前保存原生身分；選取控制項保留所屬 HWND，跨 DPI 移動後以 UIA RuntimeId 或唯一的 AutomationId／類型／class／名稱重新尋找元件，不按舊座標猜測。忽略部分 provider 在虛擬螢幕上的 offscreen 標記，但仍要求與所屬視窗相交並裁切其可見部分。矩形區域會搬移作用中視窗，有延遲時先開啟操作預覽，再從完整原生像素快照框選；零延遲直接框選。
   - 依 Windows 顯示卡驅動名稱辨識已啟用的虛擬螢幕，自動選擇像素面積最大的目標；工具列切換統一處理安裝及建立確認，系統匣不提供額外入口。
   - 使用 Win32 螢幕與視窗識別及原生像素座標，不以 Qt 的邏輯座標決定擷取區域。
   - 保存原生 window rect 與 placement，使用 `MonitorFromWindow` 取得來源螢幕；寬、高分別依「原視窗可見尺寸 ÷ 來源螢幕完整尺寸 × 目標螢幕完整尺寸」換算。移動至目標 Work area 左上角後校正不同 DPI 的 DWM 邊框；預覽及擷取使用實際可見邊界。一般視窗還原 placement 後再依保存的原生座標還原位置、長寬；原本最大化者還原原 placement。桌面模式仍擷取整個螢幕。
