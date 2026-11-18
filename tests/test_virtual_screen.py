@@ -26,6 +26,8 @@ def test_resolve_keeps_native_pixels_and_rejects_topology_changes(monkeypatch):
 @pytest.mark.parametrize("failure", [None, "capture", "move"])
 def test_window_restored_on_success_capture_failure_and_partial_move(monkeypatch, failure):
     events = []
+    waits = []
+    monkeypatch.setattr(virtual, "_wait_for_window_update", lambda *args, **kwargs: waits.append((args, kwargs)))
     frame = [CaptureRect(20, 30, 800, 600)]
     placement = (0, 3, (0, 0), (0, 0), (20, 30, 820, 630))
 
@@ -34,6 +36,8 @@ def test_window_restored_on_success_capture_failure_and_partial_move(monkeypatch
         if failure == "move":
             raise RuntimeError("move failed")
         _, _, left, top, width, height, _ = args
+        if args[-1] & 1:
+            width, height = frame[0].width, frame[0].height
         frame[0] = CaptureRect(left, top, width, height)
 
     gui = SimpleNamespace(
@@ -48,7 +52,7 @@ def test_window_restored_on_success_capture_failure_and_partial_move(monkeypatch
         SetWindowPos=move,
         SetWindowPlacement=lambda *args: events.append(("restore", args)),
     )
-    con = SimpleNamespace(SW_RESTORE=9, SW_SHOWNORMAL=1, SWP_NOZORDER=4, HWND_TOP=0, SWP_NOACTIVATE=16, SWP_SHOWWINDOW=64, SW_MAXIMIZE=3)
+    con = SimpleNamespace(SW_RESTORE=9, SW_SHOWNORMAL=1, SWP_NOSIZE=1, SWP_NOZORDER=4, HWND_TOP=0, SWP_NOACTIVATE=16, SWP_SHOWWINDOW=64, SW_MAXIMIZE=3)
     monkeypatch.setitem(sys.modules, "win32gui", gui)
     monkeypatch.setitem(sys.modules, "win32con", con)
     monkeypatch.setitem(sys.modules, "win32api", SimpleNamespace(
@@ -69,7 +73,11 @@ def test_window_restored_on_success_capture_failure_and_partial_move(monkeypatch
     else:
         run()
     assert events[-1] == ("restore", (42, placement))
-    assert ("move", (42, 0, -3840, 0, 1600, 1200, 80)) in events
+    assert events.count(("restore", (42, placement))) == 2
+    assert ("move", (42, 0, -3840, 0, 0, 0, 81)) in events
+    if failure != "move":
+        assert ("move", (42, 0, -3840, 0, 1600, 1200, 80)) in events
+        assert ((1.5,), {}) in waits
     assert ("show", (42, con.SW_MAXIMIZE)) not in events
 
 
@@ -77,6 +85,7 @@ def test_desktop_capture_does_not_move_any_window(monkeypatch):
     monkeypatch.setitem(sys.modules, "win32gui", SimpleNamespace())
     monkeypatch.setitem(sys.modules, "win32con", SimpleNamespace())
     monkeypatch.setattr(virtual, "displays", lambda: [DISPLAY])
+    monkeypatch.setattr(virtual, "_wait_for_window_update", lambda *args, **kwargs: pytest.fail("desktop capture waited for a window"))
     with virtual.moved_window(None, DISPLAY):
         pass
 
@@ -90,6 +99,8 @@ def test_preview_workflow_returns_native_image_and_restores_window(qt_app, monke
     from fshot.settings import CaptureSettings
 
     restored = []
+    waits = []
+    monkeypatch.setattr(virtual, "_wait_for_window_update", lambda *args, **kwargs: waits.append((args, kwargs)))
     window_rect = [CaptureRect(10, 10, 800, 600)]
 
     def move(hwnd, order, left, top, width, height, flags):
@@ -161,6 +172,7 @@ def test_preview_workflow_returns_native_image_and_restores_window(qt_app, monke
             assert not cursors and not delays
     assert restored == [(42, placement)]
     assert window_rect[0] == CaptureRect(10, 10, 800, 600)
+    assert waits.count(((1.5,), {})) == 1
 
 
 def test_proportional_size_preserves_each_screen_fraction():
@@ -175,3 +187,58 @@ def test_window_capture_rejects_partial_clipping(monkeypatch):
     monkeypatch.setattr(virtual, "_window_rect", lambda hwnd: CaptureRect(-4000, 0, 800, 600))
     with pytest.raises(RuntimeError, match="does not fit"):
         virtual.window_capture_rect(42, DISPLAY)
+
+
+@pytest.mark.parametrize("accept_inset", [True, False])
+def test_outer_border_retry_keeps_proportional_size_and_validates_bounds(monkeypatch, accept_inset):
+    original = CaptureRect(16, 16, 1161, 1048)
+    frame = [original]
+    placement = (0, 1, (0, 0), (0, 0), (9, 16, 1184, 1071))
+    restored = []
+    moves = []
+
+    def outer(hwnd):
+        r = frame[0]
+        return r.left-7, r.top, r.left+r.width+7, r.top+r.height+7
+
+    def move(hwnd, order, left, top, width, height, flags):
+        moves.append((left, top, width, height, flags))
+        if flags & 4:  # Restore the original outer bounds.
+            frame[0] = original
+        elif left < DISPLAY.rect.left or not accept_inset:
+            # Model Q-Dir shifting/resizing when the invisible border crosses
+            # onto the adjacent physical monitor.
+            frame[0] = CaptureRect(DISPLAY.rect.left-776, top, 3098, height-7)
+        else:
+            frame[0] = CaptureRect(left+7, top, width-14, height-7)
+
+    monkeypatch.setitem(sys.modules, "win32gui", SimpleNamespace(
+        IsWindow=lambda hwnd: True, IsIconic=lambda hwnd: False,
+        GetWindowRect=outer, GetWindowPlacement=lambda hwnd: placement,
+        SetWindowPos=move, SetWindowPlacement=lambda *args: restored.append(args),
+    ))
+    monkeypatch.setitem(sys.modules, "win32con", SimpleNamespace(
+        SW_SHOWNORMAL=1, HWND_TOP=0, SWP_NOZORDER=4,
+        SWP_NOACTIVATE=16, SWP_SHOWWINDOW=64,
+    ))
+    monkeypatch.setitem(sys.modules, "win32api", SimpleNamespace(
+        MonitorFromWindow=lambda *args: 1,
+        GetMonitorInfo=lambda handle: {"Monitor": (0, 0, 1920, 1080)},
+    ))
+    monkeypatch.setattr(virtual, "displays", lambda: [DISPLAY])
+    monkeypatch.setattr(virtual, "_window_rect", lambda hwnd: frame[0])
+    monkeypatch.setattr(virtual, "_wait_for_window_update", lambda *args, **kwargs: None)
+
+    def capture():
+        with virtual.moved_window(42, DISPLAY) as destination:
+            assert destination == CaptureRect(-3833, 0, 2322, 2096)
+            assert virtual.window_capture_rect(42, DISPLAY) == destination
+
+    if not accept_inset:
+        with pytest.raises(RuntimeError, match="does not fit"):
+            capture()
+    else:
+        capture()
+    assert any(left == DISPLAY.rect.left and width == 2336 for left, _, width, _, _ in moves)
+    assert restored == [(42, placement)]
+    assert frame[0] == original

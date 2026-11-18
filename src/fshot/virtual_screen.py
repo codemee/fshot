@@ -241,10 +241,8 @@ class VirtualCaptureSession:
         with moved_window(hwnd, display) as destination:
             logging.getLogger(__name__).warning("Virtual capture move ready: %.3fs", time.perf_counter()-started)
             QApplication.processEvents()
-            # Keep the redraw buffer for moved applications; desktop-only
-            # captures have no DPI/resize work to wait for.
-            if hwnd is not None:
-                _wait_for_window_update(0.3)
+            # moved_window has already allowed the target's renderer to resize
+            # before any countdown, interactive preview or final capture.
             if interactive and settings.delay_seconds > 0:
                 from fshot.virtual_interactive import delayed_interactive_capture
 
@@ -318,20 +316,48 @@ def moved_window(hwnd: int | None, display: Display):
         if placement[1] != win32con.SW_SHOWNORMAL:
             win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
             _wait_for_window_update(hwnd=hwnd)
+            # Complete the monitor/DPI transition before applying the final
+            # size. Restored applications can otherwise lay out at the old DPI
+            # or overwrite the resize with WM_DPICHANGED's suggested bounds.
+            win32gui.SetWindowPos(
+                hwnd, win32con.HWND_TOP, target.left, target.top, 0, 0,
+                win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE | win32con.SWP_SHOWWINDOW,
+            )
+            _wait_for_window_update(hwnd=hwnd)
         destination = CaptureRect(target.left, target.top, width, height)
         _place_window(hwnd, destination)
+        actual = _window_rect(hwnd)
+        if actual is not None and actual.intersect(rect) != actual:
+            # Q-Dir can relocate/resize itself when its invisible resize border
+            # overlaps the adjacent physical monitor. Retry with the outer
+            # top-left inside the destination, keeping the proportional size.
+            left, top, _right, _bottom = win32gui.GetWindowRect(hwnd)
+            inset_x = max(0, actual.left-left)
+            inset_y = max(0, actual.top-top)
+            if (inset_x or inset_y) and width+inset_x <= target.width and height+inset_y <= target.height:
+                destination = CaptureRect(target.left+inset_x, target.top+inset_y, width, height)
+                _place_window(hwnd, destination)
+        # Native bounds can stabilize before the application's renderer has
+        # resized its surface, even for normal windows. All moved-window modes
+        # share this buffer; do not finish it early based on native bounds.
+        _wait_for_window_update(1.5)
         window_capture_rect(hwnd, display)
         yield destination
     finally:
         if win32gui.IsWindow(hwnd):
             win32gui.SetWindowPlacement(hwnd, placement)
+            _wait_for_window_update(hwnd=hwnd)
             if placement[1] == win32con.SW_SHOWNORMAL:
-                _wait_for_window_update(hwnd=hwnd)
                 left, top, right, bottom = original_outer
                 win32gui.SetWindowPos(
                     hwnd, 0, left, top, right-left, bottom-top,
                     win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE,
                 )
+            else:
+                # The first placement crosses back to the source DPI, which
+                # can scale rcNormalPosition. Reapply it at the original DPI
+                # so a later user restore retains the saved normal size.
+                win32gui.SetWindowPlacement(hwnd, placement)
 
 
 def capture_display(service, settings, tr):
