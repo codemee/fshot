@@ -64,7 +64,7 @@ from fshot.icons import camera_icon, line_combination_icon, tool_icon
 from fshot.hotkeys import HOTKEY_ACTIONS, HotkeyAction, HotkeyCombination, default_hotkeys
 from fshot.i18n import LanguageManager, LanguageMode
 from fshot.qt_image import pil_to_qimage
-from fshot.settings import CaptureMode, CaptureSettings, DrawingSettings, LineEndStyle, ShapeStyle, Tool
+from fshot.settings import CaptureMode, CaptureSettings, DrawingSettings, LineEndStyle, ShapeStyle, Tool, virtual_repaint_seconds
 from fshot.theme import ThemeManager, ThemeMode
 
 if sys.platform == "win32":
@@ -356,6 +356,9 @@ class EditorWindow(QMainWindow):
         self.setAcceptDrops(True)
         self.settings = DrawingSettings.default()
         self.capture_settings = CaptureSettings()
+        self.capture_settings.virtual_repaint_seconds = virtual_repaint_seconds(
+            self.app_settings.value("capture/virtual_repaint_seconds", 1.5)
+        )
         self.screen_mode_validator: Callable[[], bool] | None = None
         self.hotkey_bindings = default_hotkeys()
         self._hotkey_validator: Callable | None = None
@@ -1076,7 +1079,34 @@ class EditorWindow(QMainWindow):
         self.screen_mode_action.setCheckable(True)
         self.screen_mode_action.setEnabled(sys.platform in {"win32", "darwin"})
         self.screen_mode_action.triggered.connect(self._request_screen_mode)
-        toolbar.addAction(self.screen_mode_action)
+        self.screen_mode_group = None
+        self.screen_mode_dropdown = None
+        if sys.platform == "win32":
+            self.screen_settings_menu = self._create_screen_settings_menu()
+            self.screen_mode_group = QWidget()
+            self.screen_mode_group.setObjectName("screenModeGroup")
+            screen_layout = QHBoxLayout(self.screen_mode_group)
+            screen_layout.setContentsMargins(0, 0, 0, 0)
+            screen_layout.setSpacing(0)
+            self.screen_mode_button = QToolButton()
+            self.screen_mode_button.setProperty("lineToolMain", True)
+            self.screen_mode_button.setDefaultAction(self.screen_mode_action)
+            self.screen_mode_button.setFixedSize(TOOLBAR_BUTTON_SIZE)
+            self.screen_mode_dropdown = QToolButton()
+            self.screen_mode_dropdown.setObjectName("screenModeDropdown")
+            self.screen_mode_dropdown.setProperty("lineToolDropdown", True)
+            self.screen_mode_dropdown.setArrowType(Qt.ArrowType.DownArrow)
+            self.screen_mode_dropdown.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+            self.screen_mode_dropdown.setMenu(self.screen_settings_menu)
+            self.screen_mode_dropdown.setFixedSize(TOOLBAR_DROPDOWN_SIZE)
+            screen_layout.addWidget(self.screen_mode_button)
+            screen_layout.addWidget(self.screen_mode_dropdown)
+            self.screen_mode_group.setFixedSize(
+                TOOLBAR_BUTTON_SIZE.width() + TOOLBAR_DROPDOWN_SIZE.width(), TOOLBAR_BUTTON_SIZE.height(),
+            )
+            toolbar.addWidget(self.screen_mode_group)
+        else:
+            toolbar.addAction(self.screen_mode_action)
         self.screen_mode_action.setChecked(
             sys.platform in {"win32", "darwin"} and self.app_settings.value("capture/virtual_screen", False, type=bool)
         )
@@ -1148,6 +1178,9 @@ class EditorWindow(QMainWindow):
                 menu.addAction(self.rect_action)
                 self.shape_menu.setTitle(self._tr("shape_settings"))
                 menu.addMenu(self.shape_menu)
+            elif widget is self.screen_mode_group:
+                menu.addAction(self.screen_mode_action)
+                menu.addMenu(self.screen_settings_menu)
             else:
                 menu.addAction(action)
         if menu.actions():
@@ -1402,6 +1435,10 @@ class EditorWindow(QMainWindow):
         menu.exec(self.mapToGlobal(self._toolbar_anchor(self.style_action)))
 
     def _show_delay_panel(self) -> None:
+        menu = self._create_delay_menu()
+        menu.exec(self.mapToGlobal(self._toolbar_anchor(self.delay_action)))
+
+    def _create_delay_menu(self) -> QMenu:
         menu = QMenu(self)
         panel = QWidget()
         layout = QVBoxLayout(panel)
@@ -1427,7 +1464,39 @@ class EditorWindow(QMainWindow):
         action = QWidgetAction(menu)
         action.setDefaultWidget(panel)
         menu.addAction(action)
-        menu.exec(self.mapToGlobal(self._toolbar_anchor(self.delay_action)))
+        return menu
+
+    def _create_screen_settings_menu(self) -> QMenu:
+        menu = QMenu(self)
+        menu.setObjectName("virtualScreenSettingsMenu")
+        menu.aboutToShow.connect(lambda: self._populate_screen_settings_menu(menu))
+        self._populate_screen_settings_menu(menu)
+        return menu
+
+    def _populate_screen_settings_menu(self, menu: QMenu) -> None:
+        menu.clear()
+        menu.setTitle(self._tr("virtual_repaint_wait"))
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(8)
+        layout.addWidget(QLabel(self._tr("virtual_repaint_wait")))
+        repaint = ArrowSpinBox()
+        repaint.setObjectName("virtualRepaintWait")
+        repaint.setRange(0, 10000)
+        repaint.setSingleStep(100)
+        repaint.setSuffix(" ms")
+        repaint.setMinimumWidth(130)
+        repaint.setValue(round(self.capture_settings.virtual_repaint_seconds * 1000))
+        repaint.valueChanged.connect(lambda value: self._set_virtual_repaint_wait(value / 1000))
+        layout.addWidget(repaint)
+        hint = QLabel(self._tr("virtual_repaint_help"))
+        hint.setWordWrap(True)
+        hint.setMaximumWidth(320)
+        layout.addWidget(hint)
+        action = QWidgetAction(menu)
+        action.setDefaultWidget(panel)
+        menu.addAction(action)
 
     def configure_hotkeys(
         self,
@@ -1590,6 +1659,11 @@ class EditorWindow(QMainWindow):
         if popup is not None:
             popup.close()
 
+    def _set_virtual_repaint_wait(self, seconds: float) -> None:
+        seconds = virtual_repaint_seconds(seconds)
+        self.capture_settings.virtual_repaint_seconds = seconds
+        self.app_settings.setValue("capture/virtual_repaint_seconds", seconds)
+
     def _request_screen_mode(self, checked: bool) -> None:
         self.screen_mode_action.setEnabled(False)
         try:
@@ -1608,6 +1682,10 @@ class EditorWindow(QMainWindow):
         help_key = "mac_virtual_help" if sys.platform == "darwin" else "capture_screen_help"
         self.screen_mode_action.setToolTip(label + "\n" + self._tr(help_key))
         self.screen_mode_action.setIcon(tool_icon("screen_mode", checked=checked, dark=self._is_dark_theme()))
+        if self.screen_mode_dropdown is not None:
+            self.screen_mode_dropdown.setProperty("lineSelected", checked)
+            self.screen_mode_dropdown.style().unpolish(self.screen_mode_dropdown)
+            self.screen_mode_dropdown.style().polish(self.screen_mode_dropdown)
 
     def _set_include_cursor(self, checked: bool) -> None:
         self.capture_settings.include_cursor = checked
@@ -2069,6 +2147,9 @@ class EditorWindow(QMainWindow):
             action.setToolTip(self._tooltip_with_shortcuts(label, action))
         self.line_action.setToolTip(self._tooltip_with_shortcuts(self._tr("line"), self.line_action) + "\n" + self._tr("line_shift_hint"))
         self.line_end_button.setToolTip(self._tr("line_end_settings"))
+        if self.screen_mode_dropdown is not None:
+            self.screen_mode_dropdown.setToolTip(self._tr("virtual_repaint_wait"))
+            self.screen_settings_menu.setTitle(self._tr("virtual_repaint_wait"))
         self._update_system_menu()
         self.about_action.setText(self._tr("about_fshot"))
         if self.application_menu_bar is not None:

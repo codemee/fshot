@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import math
 
 from PySide6.QtGui import QColor
 
@@ -38,6 +39,16 @@ class CaptureSettings:
     include_cursor: bool = False
     delay_seconds: float = 0
     virtual_screen: bool = False
+    virtual_repaint_seconds: float = 1.5
+
+
+def virtual_repaint_seconds(value) -> float:
+    """Read persisted repaint timing without allowing invalid or unbounded waits."""
+    try:
+        seconds = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return 1.5
+    return min(10.0, max(0.0, seconds)) if math.isfinite(seconds) else 1.5
 
 
 @dataclass

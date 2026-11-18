@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from fshot.capture import CaptureRect, _window_rect, _window_target_from_hwnd
-from fshot.settings import CaptureMode, CaptureSettings
+from fshot.settings import CaptureMode, CaptureSettings, virtual_repaint_seconds
 from fshot.qt_image import pil_to_qimage
 
 
@@ -238,7 +238,7 @@ class VirtualCaptureSession:
             raise RuntimeError(tr("virtual_owner_unavailable"))
         if target is not None and target.resolve() is None:
             raise RuntimeError(tr("virtual_control_unavailable"))
-        with moved_window(hwnd, display) as destination:
+        with moved_window(hwnd, display, settings.virtual_repaint_seconds) as destination:
             logging.getLogger(__name__).warning("Virtual capture move ready: %.3fs", time.perf_counter()-started)
             QApplication.processEvents()
             # moved_window has already allowed the target's renderer to resize
@@ -288,7 +288,7 @@ class VirtualCaptureSession:
 
 
 @contextmanager
-def moved_window(hwnd: int | None, display: Display):
+def moved_window(hwnd: int | None, display: Display, repaint_seconds: float = 1.5):
     """Always restore placement, including when preview or capture raises."""
     import win32con
     import win32gui
@@ -340,7 +340,9 @@ def moved_window(hwnd: int | None, display: Display):
         # Native bounds can stabilize before the application's renderer has
         # resized its surface, even for normal windows. All moved-window modes
         # share this buffer; do not finish it early based on native bounds.
-        _wait_for_window_update(1.5)
+        repaint_seconds = virtual_repaint_seconds(repaint_seconds)
+        if repaint_seconds > 0:
+            _wait_for_window_update(repaint_seconds)
         window_capture_rect(hwnd, display)
         yield destination
     finally:
@@ -428,7 +430,7 @@ def capture_display(service, settings, tr):
     timer = QTimer(preview)
     timer.setInterval(500)
     timer.timeout.connect(refresh)
-    with moved_window(hwnd, display):
+    with moved_window(hwnd, display, settings.virtual_repaint_seconds):
         try:
             timer.start()
             accepted = preview.exec() == QDialog.DialogCode.Accepted

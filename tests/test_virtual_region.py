@@ -50,7 +50,8 @@ def test_region_restores_before_selection_and_keeps_history_on_cancel(qt_app, mo
                              rect=CaptureRect(0, 0, 800, 600), resolve=lambda: CaptureRect(-3840, 0, 1600, 1200))
     events = []
     @contextmanager
-    def moved(hwnd, destination):
+    def moved(hwnd, destination, repaint_seconds):
+        assert repaint_seconds == 0.4
         events.append("move")
         try:
             yield display.rect
@@ -71,11 +72,12 @@ def test_region_restores_before_selection_and_keeps_history_on_cancel(qt_app, mo
     monkeypatch.setattr(region.RegionPreview, "exec", select)
     session = virtual.VirtualCaptureSession()
     session.last = (CaptureMode.FULLSCREEN, None)
-    result = session.capture(None, CaptureMode.REGION, CaptureSettings(delay_seconds=3), lambda key: key, target)
+    settings = CaptureSettings(delay_seconds=3, virtual_repaint_seconds=0.4)
+    result = session.capture(None, CaptureMode.REGION, settings, lambda key: key, target)
     if cancel:
         assert result is None
         assert session.last == (CaptureMode.FULLSCREEN, None)
     else:
         assert result.size == (1000, 500)
         assert session.last == (CaptureMode.REGION, target)
-        assert session.repeat(None, CaptureSettings(delay_seconds=3), lambda key: key).size == (1000, 500)
+        assert session.repeat(None, settings, lambda key: key).size == (1000, 500)

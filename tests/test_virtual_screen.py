@@ -24,7 +24,8 @@ def test_resolve_keeps_native_pixels_and_rejects_topology_changes(monkeypatch):
 
 
 @pytest.mark.parametrize("failure", [None, "capture", "move"])
-def test_window_restored_on_success_capture_failure_and_partial_move(monkeypatch, failure):
+@pytest.mark.parametrize("repaint_seconds", [0, 0.4, 1.5])
+def test_window_restored_on_success_capture_failure_and_partial_move(monkeypatch, failure, repaint_seconds):
     events = []
     waits = []
     monkeypatch.setattr(virtual, "_wait_for_window_update", lambda *args, **kwargs: waits.append((args, kwargs)))
@@ -63,7 +64,7 @@ def test_window_restored_on_success_capture_failure_and_partial_move(monkeypatch
     monkeypatch.setattr(virtual, "_window_rect", lambda hwnd: frame[0])
 
     def run():
-        with virtual.moved_window(42, DISPLAY):
+        with virtual.moved_window(42, DISPLAY, repaint_seconds):
             if failure == "capture":
                 raise RuntimeError("capture failed")
 
@@ -77,7 +78,7 @@ def test_window_restored_on_success_capture_failure_and_partial_move(monkeypatch
     assert ("move", (42, 0, -3840, 0, 0, 0, 81)) in events
     if failure != "move":
         assert ("move", (42, 0, -3840, 0, 1600, 1200, 80)) in events
-        assert ((1.5,), {}) in waits
+        assert (((repaint_seconds,), {}) in waits) == (repaint_seconds > 0)
     assert ("show", (42, con.SW_MAXIMIZE)) not in events
 
 

@@ -16,6 +16,80 @@ from fshot.canvas import CANVAS_PADDING
 from fshot.main_window import _align_scrollbars_to_image
 
 
+def test_virtual_repaint_wait_is_persisted_separately_from_capture_delay(qt_app, tmp_path):
+    import sys
+    from PySide6.QtCore import QSettings
+    from fshot.main_window import EditorWindow
+
+    path = str(tmp_path / "settings.ini")
+    settings = QSettings(path, QSettings.Format.IniFormat)
+    window = EditorWindow(app_settings=settings)
+    menu = window._create_delay_menu()
+    try:
+        assert window.capture_settings.virtual_repaint_seconds == 1.5
+        assert menu.findChild(QSpinBox, "virtualRepaintWait") is None
+        if sys.platform == "win32":
+            control = window.screen_settings_menu.findChild(QSpinBox, "virtualRepaintWait")
+            assert control is not None and control.value() == 1500
+            control.setValue(400)
+        else:
+            assert window.screen_mode_dropdown is None
+            window._set_virtual_repaint_wait(0.4)
+        window._set_delay(3, None)
+        assert window.capture_settings.virtual_repaint_seconds == 0.4
+        assert window.capture_settings.delay_seconds == 3
+        settings.sync()
+        reopened = EditorWindow(app_settings=QSettings(path, QSettings.Format.IniFormat))
+        try:
+            assert reopened.capture_settings.virtual_repaint_seconds == 0.4
+            reopened._set_virtual_repaint_wait(0)
+            assert reopened.capture_settings.virtual_repaint_seconds == 0
+        finally:
+            reopened.hide()
+            reopened.deleteLater()
+    finally:
+        menu.deleteLater()
+        window.hide()
+        window.deleteLater()
+        qt_app.processEvents()
+
+
+def test_screen_dropdown_and_overflow_preserve_the_mode_toggle(qt_app, tmp_path):
+    import sys
+    import pytest
+    from PySide6.QtCore import QSettings
+    from fshot.main_window import EditorWindow
+
+    if sys.platform != "win32":
+        pytest.skip("Windows virtual repaint settings")
+    window = EditorWindow(app_settings=QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat))
+    window.screen_mode_validator = lambda: True
+    try:
+        window.resize(1800, 600)
+        window.show()
+        qt_app.processEvents()
+        assert window.screen_mode_button.geometry().right() + 1 == window.screen_mode_dropdown.x()
+        assert window.screen_mode_button.size() == QSize(34, 34)
+        assert window.screen_mode_dropdown.size() == QSize(20, 34)
+        assert window.screen_mode_dropdown.menu() is window.screen_settings_menu
+        window.screen_mode_button.click()
+        assert window.capture_settings.virtual_screen
+        assert not window.screen_settings_menu.isVisible()
+        window.resize(450, 600)
+        qt_app.processEvents()
+        toolbar = window.findChild(QToolBar, "editorToolbar")
+        window._populate_toolbar_overflow(toolbar, toolbar.overflow_menu)
+        assert window.screen_mode_action in toolbar.overflow_menu.actions()
+        assert window.screen_settings_menu.menuAction() in toolbar.overflow_menu.actions()
+        window._set_virtual_repaint_wait(0.4)
+        window.screen_settings_menu.aboutToShow.emit()
+        assert window.screen_settings_menu.findChild(QSpinBox, "virtualRepaintWait").value() == 400
+    finally:
+        window.hide()
+        window.deleteLater()
+        qt_app.processEvents()
+
+
 def test_tab_overflow_controls_scroll_select_and_follow_window_width(qt_app):
     from fshot.main_window import EditorWindow
     from fshot.theme import ThemeMode

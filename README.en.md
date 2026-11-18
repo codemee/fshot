@@ -68,6 +68,8 @@ Images can also be added by drag-and-drop or clipboard paste. A dropped image op
 
 For higher-resolution window captures, switch the toolbar monitor button to virtual mode; the choice is remembered. This feature needs a virtual display and the relevant system permissions.
 
+On Windows, the dropdown arrow beside the physical/virtual monitor button opens Virtual display repaint wait (0–10000 ms, default 1500 ms). It is saved automatically; 0 disables the extra wait after moving a window. This does not change the capture countdown.
+
 See the [Virtual Screen Capture Guide](https://github.com/codemee/fshot/blob/main/docs/virtual-screen.en.md) for Windows/macOS setup, delayed interaction previews, and limitations.
 
 In virtual mode, `Ctrl+Shift+R` moves the active window to the virtual display and selects a rectangle from a frozen preview of the whole display. A positive delay lets you interact before freezing. Release the mouse to crop original pixels; Esc or right-click cancels. `Ctrl+Shift+Q` recaptures the same window and rectangle.
